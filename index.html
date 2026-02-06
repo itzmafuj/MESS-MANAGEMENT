@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> MESS MANAGEMENT </title>
+    <title>Mess Manager Pro 2026</title>
     <style>
         :root {
             --primary: #6366f1;
@@ -126,6 +126,7 @@
         .meal-main { font-size: 1.1rem; font-weight: 700; color: var(--dark); }
         .meal-sub { font-size: 0.85rem; color: #64748b; margin-top: 2px; }
         .currency { font-weight: bold; margin-right: 2px; }
+        .status-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: block; margin-top: 4px;}
         .hidden { display: none !important; }
     </style>
 </head>
@@ -159,7 +160,7 @@
                 <h3>Monthly Balance Sheet</h3>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>Member Name</th><th>Total Deposit</th><th>Meal Count (Actual/Min)</th><th>Actual Cost</th><th>Net Balance</th></tr></thead>
+                        <thead><tr><th>Member Name</th><th>Total Deposit</th><th>Meal Count</th><th>Bill Cost</th><th>Net Balance</th></tr></thead>
                         <tbody id="summary-body"></tbody>
                     </table>
                 </div>
@@ -299,21 +300,26 @@
 
         document.getElementById('summary-body').innerHTML = data.members.map(m => {
             const actCount = mMeals[m.id];
-            const minAllowed = (m.name.toUpperCase() === 'RAJOB') ? 30 : 50;
             
-            // MATH UPDATE: Cost is based on ACTUAL meals now
-            const cost = actCount * rate;
-            const bal = mDeps[m.id] - cost;
+            // NEW MATH: Cost based on actual meals
+            const billCost = actCount * rate;
+            
+            // BALANCE LOGIC: Bill Cost - Total Deposit
+            // Positive (+) means they owe money (DUE)
+            // Negative (-) means they have extra money (SURPLUS)
+            const netBalance = billCost - mDeps[m.id];
             
             return `<tr>
                 <td><b>${m.name}</b></td>
                 <td><span class="currency">₹</span>${mDeps[m.id].toFixed(2)}</td>
-                <td>
-                    <div class="meal-main">${actCount}</div>
-                    <div class="meal-sub">Minimum Rule: ${minAllowed}</div>
+                <td><div class="meal-main">${actCount}</div></td>
+                <td><span class="currency">₹</span>${billCost.toFixed(2)}</td>
+                <td style="color:${netBalance > 0 ? 'var(--danger)' : 'var(--secondary)'}">
+                    <b><span class="currency">₹</span>${Math.abs(netBalance).toFixed(2)}</b>
+                    <span class="status-badge" style="background:${netBalance > 0 ? '#fee2e2' : '#d1fae5'}">
+                        ${netBalance > 0 ? 'DUE' : 'SURPLUS'}
+                    </span>
                 </td>
-                <td><span class="currency">₹</span>${cost.toFixed(2)}</td>
-                <td style="color:${bal < 0 ? 'var(--danger)' : 'var(--secondary)'}"><b><span class="currency">₹</span>${bal.toFixed(2)}</b></td>
             </tr>`;
         }).join('');
     }
