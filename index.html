@@ -81,6 +81,13 @@
             box-shadow: var(--shadow);
         }
 
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 1rem;
+        }
+
         .grid-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -110,6 +117,7 @@
             border-radius: 10px;
             margin-bottom: 1rem;
             box-sizing: border-box;
+            font-size: 1rem;
         }
 
         .btn {
@@ -151,16 +159,42 @@
 
     <div class="container">
         <div id="tab-dashboard" class="tab-content">
-            <div class="grid-stats">
-                <div class="stat-box blue"><span>Total Actual Meals</span><h1 id="stat-meals">0</h1></div>
-                <div class="stat-box green"><span>Total Mess Cost</span><h1><span class="currency">₹</span><span id="stat-cost">0.00</span></h1></div>
-                <div class="stat-box red"><span>Current Meal Rate</span><h1><span class="currency">₹</span><span id="stat-rate">0.00</span></h1></div>
+            <div class="card">
+                <h3 style="margin-top:0">Select View Period</h3>
+                <div class="filter-grid">
+                    <div>
+                        <label style="font-size: 0.8rem; color: #64748b;">Month</label>
+                        <select id="filter-month" class="edit-input" onchange="refreshUI()">
+                            <option value="01">January</option><option value="02">February</option>
+                            <option value="03">March</option><option value="04">April</option>
+                            <option value="05">May</option><option value="06">June</option>
+                            <option value="07">July</option><option value="08">August</option>
+                            <option value="09">September</option><option value="10">October</option>
+                            <option value="11">November</option><option value="12">December</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; color: #64748b;">Year</label>
+                        <select id="filter-year" class="edit-input" onchange="refreshUI()">
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                        </select>
+                    </div>
+                </div>
             </div>
+
+            <div class="grid-stats">
+                <div class="stat-box blue"><span>Month's Meals</span><h1 id="stat-meals">0</h1></div>
+                <div class="stat-box green"><span>Month's Cost</span><h1><span class="currency">₹</span><span id="stat-cost">0.00</span></h1></div>
+                <div class="stat-box red"><span>Meal Rate</span><h1><span class="currency">₹</span><span id="stat-rate">0.00</span></h1></div>
+            </div>
+
             <div class="card">
                 <h3>Monthly Balance Sheet</h3>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>Member</th><th>Total Deposit</th><th>Meal (Act/Min)</th><th>Bill Cost</th><th>Net Balance</th></tr></thead>
+                        <thead><tr><th>Member</th><th>Deposit</th><th>Meal (Act/Min)</th><th>Cost</th><th>Status</th></tr></thead>
                         <tbody id="summary-body"></tbody>
                     </table>
                 </div>
@@ -201,30 +235,30 @@
 
         <div id="tab-members" class="tab-content hidden">
             <div class="card" id="admin-member-entry">
-                <h3>Add New Member (Admin)</h3>
+                <h3>Add New Member</h3>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <input type="text" id="new-mem-name" class="edit-input" placeholder="Member Name">
-                    <input type="number" id="new-mem-min" class="edit-input" placeholder="Min Meal (e.g. 50)" value="50">
+                    <input type="text" id="new-mem-name" class="edit-input" placeholder="Name">
+                    <input type="number" id="new-mem-min" class="edit-input" placeholder="Min Meal" value="50">
                 </div>
                 <button class="btn btn-primary" style="background:var(--secondary)" onclick="addMember()">Add Member</button>
                 
                 <h3 style="margin-top:2rem">Add Deposit</h3>
                 <input type="date" id="dep-date" class="edit-input">
                 <select id="dep-member" class="edit-input"></select>
-                <input type="number" id="dep-amt" placeholder="Deposit Amount (₹)" class="edit-input">
+                <input type="number" id="dep-amt" placeholder="Amount (₹)" class="edit-input">
                 <button class="btn btn-primary" onclick="addDeposit()">Save Deposit</button>
             </div>
             <div class="card">
-                <h3>Active Members List</h3>
+                <h3>Member Settings</h3>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>Name</th><th>Min Meal Setting</th><th>Action</th></tr></thead>
+                        <thead><tr><th>Name</th><th>Min Setting</th><th>Action</th></tr></thead>
                         <tbody id="member-list-body"></tbody>
                     </table>
                 </div>
             </div>
             <div class="card">
-                <h3>Deposit Records</h3>
+                <h3>All Deposits</h3>
                 <div class="table-wrap">
                     <table><thead><tr><th>Date</th><th>Name</th><th>Amount</th><th>Action</th></tr></thead><tbody id="deposit-history-body"></tbody></table>
                 </div>
@@ -233,10 +267,10 @@
 
         <div id="tab-settings" class="tab-content hidden">
             <div class="card">
-                <h3>Access Key Settings</h3>
-                <label>Admin Access Key</label><input type="text" id="set-admin-key" class="edit-input">
-                <label>Viewer Access Key</label><input type="text" id="set-viewer-key" class="edit-input">
-                <button class="btn btn-primary" onclick="updateKeys()">Save Security Keys</button>
+                <h3>Security Keys</h3>
+                <label>Admin Key</label><input type="text" id="set-admin-key" class="edit-input">
+                <label>Viewer Key</label><input type="text" id="set-viewer-key" class="edit-input">
+                <button class="btn btn-primary" onclick="updateKeys()">Save Keys</button>
             </div>
         </div>
     </div>
@@ -245,7 +279,6 @@
 <script>
     let keys = JSON.parse(localStorage.getItem('messKeys')) || { admin: "MESS2026", viewer: "MESSMEAL" };
     let isAdmin = false;
-    // Added minMeal: 50 as default for existing members
     let data = JSON.parse(localStorage.getItem('messData')) || { 
         members: [
             {id: 1, name: 'SAMIM', minMeal: 50}, 
@@ -258,8 +291,9 @@
         meals: {}, bazar: [], deposits: [] 
     };
 
+    // Auto-login logic
     function autoLogin() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) login(v); }
-    function checkLogin() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) login(v); else alert("Access Key Incorrect"); }
+    function checkLogin() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) login(v); else alert("Incorrect Key"); }
 
     function login(key) {
         isAdmin = (key === keys.admin);
@@ -267,14 +301,27 @@
         localStorage.setItem('userRole', isAdmin ? 'admin' : 'viewer');
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app').style.display = 'block';
+        
+        // Hide Admin controls for viewers
         document.getElementById('admin-meal-entry').classList.toggle('hidden', !isAdmin);
         document.getElementById('admin-member-entry').classList.toggle('hidden', !isAdmin);
         document.getElementById('nav-settings').classList.toggle('hidden', !isAdmin);
+        
+        // Set current month/year as default filters
+        const now = new Date();
+        document.getElementById('filter-month').value = String(now.getMonth() + 1).padStart(2, '0');
+        document.getElementById('filter-year').value = now.getFullYear();
+        
         refreshUI();
     }
 
     function logout() { localStorage.removeItem('isLoggedIn'); location.reload(); }
-    window.onload = () => { if(localStorage.getItem('isLoggedIn') === 'true') { login(localStorage.getItem('userRole') === 'admin' ? keys.admin : keys.viewer); } };
+
+    window.onload = () => { 
+        if(localStorage.getItem('isLoggedIn') === 'true') { 
+            login(localStorage.getItem('userRole') === 'admin' ? keys.admin : keys.viewer); 
+        } 
+    };
 
     function showTab(id, btn) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
@@ -287,7 +334,6 @@
     function refreshUI() {
         document.getElementById('dep-member').innerHTML = data.members.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
         
-        // Admin: Show Daily Meal Inputs
         if(isAdmin) {
             document.getElementById('meal-inputs-area').innerHTML = data.members.map(m => `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:#f1f5f9; padding:10px; border-radius:10px">
@@ -295,16 +341,11 @@
                 </div>`).join('');
         }
 
-        // Member List with Delete Button
         document.getElementById('member-list-body').innerHTML = data.members.map((m, index) => `
-            <tr>
-                <td><b>${m.name}</b></td>
-                <td>${m.minMeal || 50} Meals</td>
-                <td>${isAdmin ? `<button class="btn btn-del" onclick="delMember(${index})">Remove</button>` : '-'}</td>
-            </tr>`).join('');
+            <tr><td><b>${m.name}</b></td><td>${m.minMeal || 50}</td><td>${isAdmin ? `<button class="btn btn-del" onclick="delMember(${index})">Remove</button>` : '-'}</td></tr>`).join('');
 
         const dates = Object.keys(data.meals).sort().reverse();
-        document.getElementById('meal-history-head').innerHTML = `<tr><th>Date</th>${data.members.map(m => `<th>${m.name}</th>`).join('')}</tr>`;
+        document.getElementById('meal-history-head').innerHTML = `<tr><th>Date</th>${data.members.map(m => `<th>${m.name.substring(0,3)}</th>`).join('')}</tr>`;
         document.getElementById('meal-history-body').innerHTML = dates.map(d => `<tr><td><small>${d}</small></td>${data.members.map(m => `<td>${data.meals[d][m.id] || 0}</td>`).join('')}</tr>`).join('');
         
         document.getElementById('bazar-body').innerHTML = data.bazar.slice().reverse().map((b, i) => `<tr><td>${b.date}</td><td>${b.note}</td><td>₹${b.amt}</td><td>${isAdmin ? `<button class="btn btn-del" onclick="delBazar(${data.bazar.length-1-i})">Del</button>` : '-'}</td></tr>`).join('');
@@ -318,14 +359,42 @@
     }
 
     function calculate() {
-        let totalActMeals = 0; let mMeals = {}; let mDeps = {};
+        const selMonth = document.getElementById('filter-month').value;
+        const selYear = document.getElementById('filter-year').value;
+        const filterPrefix = `${selYear}-${selMonth}`;
+
+        let totalActMeals = 0; 
+        let mMeals = {}; 
+        let mDeps = {};
+
         data.members.forEach(m => { mMeals[m.id] = 0; mDeps[m.id] = 0; });
-        data.deposits.forEach(d => { if(mDeps[d.mId] !== undefined) mDeps[d.mId] += parseFloat(d.amt); });
-        Object.values(data.meals).forEach(day => { Object.entries(day).forEach(([id, count]) => { if(mMeals[id] !== undefined) { mMeals[id] += parseFloat(count); totalActMeals += parseFloat(count); } }); });
-        
-        const totalBazar = data.bazar.reduce((s, b) => s + parseFloat(b.amt), 0);
+
+        // Filter Deposits
+        data.deposits.forEach(d => {
+            if(d.date.startsWith(filterPrefix)) {
+                if(mDeps[d.mId] !== undefined) mDeps[d.mId] += parseFloat(d.amt);
+            }
+        });
+
+        // Filter Meals
+        Object.entries(data.meals).forEach(([date, dayEntry]) => {
+            if(date.startsWith(filterPrefix)) {
+                Object.entries(dayEntry).forEach(([id, count]) => {
+                    if(mMeals[id] !== undefined) {
+                        mMeals[id] += parseFloat(count);
+                        totalActMeals += parseFloat(count);
+                    }
+                });
+            }
+        });
+
+        // Filter Bazar
+        const totalBazar = data.bazar.reduce((sum, b) => {
+            return b.date.startsWith(filterPrefix) ? sum + parseFloat(b.amt) : sum;
+        }, 0);
+
         const rate = totalActMeals > 0 ? totalBazar / totalActMeals : 0;
-        
+
         document.getElementById('stat-meals').innerText = totalActMeals;
         document.getElementById('stat-cost').innerText = totalBazar.toFixed(2);
         document.getElementById('stat-rate').innerText = rate.toFixed(2);
@@ -338,14 +407,11 @@
             
             return `<tr>
                 <td><b>${m.name}</b></td>
-                <td><span class="currency">₹</span>${mDeps[m.id].toFixed(2)}</td>
-                <td>
-                    <div class="meal-main">${actCount}</div>
-                    <div class="meal-sub">Min: ${minReq}</div>
-                </td>
-                <td><span class="currency">₹</span>${billCost.toFixed(2)}</td>
+                <td>₹${mDeps[m.id].toFixed(0)}</td>
+                <td><div class="meal-main">${actCount}</div><div class="meal-sub">Min: ${minReq}</div></td>
+                <td>₹${billCost.toFixed(1)}</td>
                 <td style="color:${netBalance > 0 ? 'var(--danger)' : 'var(--secondary)'}">
-                    <b><span class="currency">₹</span>${Math.abs(netBalance).toFixed(2)}</b>
+                    <b>₹${Math.abs(netBalance).toFixed(1)}</b>
                     <span class="status-badge" style="background:${netBalance > 0 ? '#fee2e2' : '#d1fae5'}">
                         ${netBalance > 0 ? 'DUE' : 'SURPLUS'}
                     </span>
@@ -354,6 +420,7 @@
         }).join('');
     }
 
+    // Database Actions
     function saveDailyMeals() {
         const d = document.getElementById('meal-date').value; if(!d) return alert("Select Date");
         const entry = {}; document.querySelectorAll('.day-meal-val').forEach(i => entry[i.dataset.id] = parseFloat(i.value) || 0);
@@ -367,36 +434,10 @@
         const d = document.getElementById('dep-date').value; const m = document.getElementById('dep-member').value; const a = document.getElementById('dep-amt').value;
         if(d && a && m) { data.deposits.push({mId: parseInt(m), amt: parseFloat(a), date: d}); save(); document.getElementById('dep-amt').value = ''; }
     }
-    
-    // NEW MEMBER ADD LOGIC
     function addMember() { 
         const n = document.getElementById('new-mem-name').value; 
         const m = document.getElementById('new-mem-min').value || 50;
-        if(n) { 
-            data.members.push({id: Date.now(), name: n.toUpperCase(), minMeal: parseInt(m)}); 
-            save(); 
-            document.getElementById('new-mem-name').value = '';
-        } 
+        if(n) { data.members.push({id: Date.now(), name: n.toUpperCase(), minMeal: parseInt(m)}); save(); document.getElementById('new-mem-name').value = ''; } 
     }
-
-    // DELETE MEMBER LOGIC
-    function delMember(i) {
-        if(confirm(`Are you sure you want to remove ${data.members[i].name}? This will not delete their past history but they won't show in new lists.`)) {
-            data.members.splice(i, 1);
-            save();
-        }
-    }
-
-    function delBazar(i) { if(confirm("Delete bazar record?")) { data.bazar.splice(i, 1); save(); } }
-    function delDep(i) { if(confirm("Delete deposit record?")) { data.deposits.splice(i, 1); save(); } }
-    
-    function updateKeys() {
-        keys.admin = document.getElementById('set-admin-key').value.toUpperCase();
-        keys.viewer = document.getElementById('set-viewer-key').value.toUpperCase();
-        localStorage.setItem('messKeys', JSON.stringify(keys)); alert("Keys Updated!");
-    }
-    
-    function save() { localStorage.setItem('messData', JSON.stringify(data)); refreshUI(); }
-</script>
-</body>
-</html>
+    function delMember(i) { if(confirm(`Remove ${data.members[i].name}?`)) { data.members.splice(i, 1); save(); } }
+    function delBazar(i) { if(confirm(
