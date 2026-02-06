@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mess Manager Pro 2026</title>
+    <title>Mess Management System</title>
     <style>
         :root {
             --primary: #6366f1; --secondary: #10b981; --danger: #f43f5e;
@@ -31,7 +31,7 @@
         .edit-input { width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 10px; margin-bottom: 1rem; box-sizing: border-box; }
         .btn { padding: 0.8rem 1.5rem; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; width: 100%; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-del { background: #fee2e2; color: var(--danger); padding: 5px 10px; font-size: 0.75rem; border:none; border-radius:4px; cursor:pointer; }
+        .btn-del { background: #fee2e2; color: var(--danger); width: auto; padding: 5px 10px; font-size: 0.75rem; border:none; border-radius:4px; cursor:pointer; }
         .status-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: block; margin-top: 4px; text-align: center; }
         .hidden { display: none !important; }
         .meal-main { font-size: 1.1rem; font-weight: 700; color: var(--dark); }
@@ -61,12 +61,7 @@
         <div id="tab-dashboard" class="tab-content">
             <div class="card">
                 <div style="display: flex; gap: 10px;">
-                    <select id="filter-month" class="edit-input" onchange="refreshUI()" style="margin:0">
-                        <option value="01">January</option><option value="02">February</option><option value="03">March</option>
-                        <option value="04">April</option><option value="05">May</option><option value="06">June</option>
-                        <option value="07">July</option><option value="08">August</option><option value="09">September</option>
-                        <option value="10">October</option><option value="11">November</option><option value="12">December</option>
-                    </select>
+                    <select id="filter-month" class="edit-input" onchange="refreshUI()" style="margin:0"></select>
                     <select id="filter-year" class="edit-input" onchange="refreshUI()" style="margin:0">
                         <option value="2025">2025</option><option value="2026">2026</option>
                     </select>
@@ -111,7 +106,7 @@
 
         <div id="tab-members" class="tab-content hidden">
             <div class="card admin-only hidden">
-                <h3>New Member / Deposit</h3>
+                <h3>Member & Deposit</h3>
                 <input type="text" id="new-mem-name" class="edit-input" placeholder="Name"><input type="number" id="new-mem-min" class="edit-input" placeholder="Min Meal" value="50"><button class="btn btn-primary" style="background:var(--secondary)" onclick="addMember()">Create</button>
                 <hr style="margin:1.5rem 0">
                 <input type="date" id="dep-date" class="edit-input"><select id="dep-member" class="edit-input"></select><input type="number" id="dep-amt" placeholder="Deposit Amount" class="edit-input"><button class="btn btn-primary" onclick="addDeposit()">Save</button>
@@ -120,9 +115,7 @@
             <div class="card"><h3>Recent Deposits</h3><div class="table-wrap"><table><tbody id="deposit-history-body"></tbody></table></div></div>
         </div>
 
-        <div id="tab-settings" class="tab-content hidden">
-            <div class="card"><h3>Cloud Keys</h3><label>Admin Key</label><input type="text" id="set-admin-key" class="edit-input"><label>Viewer Key</label><input type="text" id="set-viewer-key" class="edit-input"><button class="btn btn-primary" onclick="updateKeys()">Save Keys</button></div>
-        </div>
+        <div id="tab-settings" class="tab-content hidden"><div class="card"><h3>Keys</h3><input type="text" id="set-admin-key" class="edit-input"><input type="text" id="set-viewer-key" class="edit-input"><button class="btn btn-primary" onclick="updateKeys()">Save Keys</button></div></div>
     </div>
 </div>
 
@@ -179,7 +172,9 @@
         const lastDayString = `${selYear}-${selMonth}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
         const isMonthFinished = data.meals && data.meals[lastDayString];
 
-        document.getElementById('logic-indicator').innerText = isMonthFinished ? "Month Finished: Min Rule Applied" : "Month in Progress: Showing Actual";
+        const indicator = document.getElementById('logic-indicator');
+        indicator.innerText = isMonthFinished ? "Month Finished: Min Rule Active" : "Month Progress: Tracking Actual";
+        indicator.style.color = isMonthFinished ? "var(--secondary)" : "var(--warning)";
 
         let totalBillable = 0, mActualCounts = {}, mDepsSum = {}, periodIncome = 0;
         (data.members || []).forEach(m => { mActualCounts[m.id] = 0; mDepsSum[m.id] = 0; });
@@ -212,9 +207,18 @@
         document.getElementById('balance-card').style.background = avail < 0 ? 'var(--danger)' : 'var(--warning)';
 
         sBody.innerHTML = calcData.map(m => {
-            const cost = m.bill * rate;
-            const net = (m.billable * rate) - mDepsSum[m.id];
-            return `<tr><td><b>${m.name}</b></td><td>₹${mDepsSum[m.id]}</td><td><div class="meal-main">${m.actual} / ${m.minSet}</div><div class="meal-sub">Bill: ${m.billable}</div></td><td>₹${(m.billable * rate).toFixed(1)}</td><td style="color:${net > 0 ? 'red' : 'green'}"><b>₹${Math.abs(net).toFixed(1)}</b><span class="status-badge" style="background:${net > 0 ? '#fee2e2' : '#d1fae5'}">${net > 0 ? 'DUE' : 'SURPLUS'}</span></td></tr>`;
+            const cost = m.billable * rate;
+            const net = cost - mDepsSum[m.id];
+            return `<tr>
+                <td><b>${m.name}</b></td>
+                <td>₹${mDepsSum[m.id]}</td>
+                <td><div class="meal-main">${m.actual} / ${m.minSet}</div><div class="meal-sub">Bill: ${m.billable}</div></td>
+                <td>₹${cost.toFixed(1)}</td>
+                <td style="color:${net > 0 ? 'red' : 'green'}">
+                    <b>₹${Math.abs(net).toFixed(1)}</b>
+                    <span class="status-badge" style="background:${net > 0 ? '#fee2e2' : '#d1fae5'}">${net > 0 ? 'DUE' : 'SURPLUS'}</span>
+                </td>
+            </tr>`;
         }).join('');
 
         document.getElementById('dep-member').innerHTML = (data.members || []).map(m => `<option value="${m.id}">${m.name}</option>`).join('');
@@ -233,8 +237,30 @@
         }).join('');
     };
 
-    window.showTab = function(id, btn) { document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden')); document.getElementById('tab-'+id).classList.remove('hidden'); document.querySelectorAll('nav button').forEach(b => b.classList.remove('active')); btn.classList.add('active'); window.refreshUI(); };
-    window.login = function(key) { isAdmin = (key === keys.admin); localStorage.setItem('isLoggedIn', 'true'); localStorage.setItem('userRole', isAdmin ? 'admin' : 'viewer'); document.getElementById('login-screen').style.display = 'none'; document.getElementById('app').style.display = 'block'; document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin)); window.refreshUI(); };
+    window.showTab = function(id, btn) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+        document.getElementById('tab-'+id).classList.remove('hidden');
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        window.refreshUI();
+    };
+
+    window.login = function(key) {
+        isAdmin = (key === keys.admin);
+        localStorage.setItem('isLoggedIn', 'true'); localStorage.setItem('userRole', isAdmin ? 'admin' : 'viewer');
+        document.getElementById('login-screen').style.display = 'none'; document.getElementById('app').style.display = 'block';
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
+        
+        const now = new Date();
+        const monthSelect = document.getElementById('filter-month');
+        monthSelect.innerHTML = ['January','February','March','April','May','June','July','August','September','October','November','December']
+            .map((m, i) => `<option value="${String(i+1).padStart(2,'0')}">${m}</option>`).join('');
+        monthSelect.value = String(now.getMonth() + 1).padStart(2, '0');
+        document.getElementById('filter-year').value = now.getFullYear();
+        
+        window.refreshUI();
+    };
+
     window.autoLogin = function() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) window.login(v); };
     window.checkLogin = function() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) window.login(v); else alert("Wrong Key"); };
     window.logout = function() { localStorage.removeItem('isLoggedIn'); location.reload(); };
@@ -247,6 +273,7 @@
     window.delBazar = function(i) { if(!isAdmin) return; data.bazar.splice(i, 1); window.save(); };
     window.delDep = function(i) { if(!isAdmin) return; data.deposits.splice(i, 1); window.save(); };
     window.updateKeys = function() { if(!isAdmin) return; keys.admin = document.getElementById('set-admin-key').value.toUpperCase(); keys.viewer = document.getElementById('set-viewer-key').value.toUpperCase(); window.save(); alert("Keys Updated!"); };
+
     if(localStorage.getItem('isLoggedIn') === 'true') window.login(localStorage.getItem('userRole') === 'admin' ? keys.admin : keys.viewer);
 </script>
 </body>
