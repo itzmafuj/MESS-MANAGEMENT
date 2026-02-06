@@ -31,8 +31,7 @@
         .edit-input { width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 10px; margin-bottom: 1rem; box-sizing: border-box; }
         .btn { padding: 0.8rem 1.5rem; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; width: 100%; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-secondary { background: var(--secondary); color: white; margin-top: 10px; }
-        .btn-del { background: #fee2e2; color: var(--danger); width: auto; padding: 5px 10px; font-size: 0.75rem; border:none; border-radius:4px; cursor:pointer; }
+        .btn-del { background: #fee2e2; color: var(--danger); padding: 5px 10px; font-size: 0.75rem; border:none; border-radius:4px; cursor:pointer; }
         .status-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: block; margin-top: 4px; text-align: center; }
         .hidden { display: none !important; }
         .meal-main { font-size: 1.1rem; font-weight: 700; color: var(--dark); }
@@ -69,18 +68,18 @@
                         <option value="10">October</option><option value="11">November</option><option value="12">December</option>
                     </select>
                     <select id="filter-year" class="edit-input" onchange="refreshUI()" style="margin:0">
-                        <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
+                        <option value="2025">2025</option><option value="2026">2026</option>
                     </select>
                 </div>
             </div>
             <div class="card">
-                <h2 style="text-align:center; color:var(--primary); margin-top:0">Monthly Balance Sheet</h2>
+                <h2 style="text-align:center; color:var(--primary); margin-top:0">Monthly Summary</h2>
                 <p id="logic-indicator" style="font-size: 0.75rem; text-align: center; color: #64748b; margin-top: -10px; font-weight: bold;"></p>
                 <div class="grid-stats">
                     <div class="stat-box blue"><span>Billable Meals</span><h2 id="stat-meals">0</h2></div>
-                    <div class="stat-box green"><span>Total Cost</span><h2>₹<span id="stat-cost">0</span></h2></div>
-                    <div class="stat-box gold" id="balance-card"><span>Available</span><h2>₹<span id="stat-balance">0</span></h2></div>
-                    <div class="stat-box red"><span>Meal Rate</span><h2>₹<span id="stat-rate">0</span></h2></div>
+                    <div class="stat-box green"><span>Total Cost</span><h2 id="stat-cost">₹0</h2></div>
+                    <div class="stat-box gold" id="balance-card"><span>Available</span><h2 id="stat-balance">₹0</h2></div>
+                    <div class="stat-box red"><span>Rate</span><h2 id="stat-rate">₹0</h2></div>
                 </div>
                 <div class="table-wrap">
                     <table>
@@ -94,63 +93,35 @@
 
         <div id="tab-meals" class="tab-content hidden">
             <div class="card admin-only hidden" id="admin-meal-entry">
-                <h3>Record Daily Meals</h3>
+                <h3>Record Meals</h3>
                 <input type="date" id="meal-date" class="edit-input">
                 <div id="meal-inputs-area"></div>
-                <button class="btn btn-primary" onclick="saveDailyMeals()">Save Daily Record</button>
+                <button class="btn btn-primary" onclick="saveDailyMeals()">Save Record</button>
             </div>
-            <div class="card">
-                <div class="table-wrap">
-                    <table><thead id="meal-history-head"></thead><tbody id="meal-history-body"></tbody></table>
-                </div>
-            </div>
+            <div class="card"><div class="table-wrap"><table><thead id="meal-history-head"></thead><tbody id="meal-history-body"></tbody></table></div></div>
         </div>
 
         <div id="tab-bazar" class="tab-content hidden">
-            <div class="card admin-only hidden" id="admin-bazar-entry">
-                <h3>Add Bazar Expense</h3>
-                <input type="date" id="b-date" class="edit-input">
-                <input type="number" id="b-amt" placeholder="Amt" class="edit-input">
-                <input type="text" id="b-note" placeholder="Item" class="edit-input">
-                <button class="btn btn-secondary" onclick="addBazar()">Save</button>
+            <div class="card admin-only hidden">
+                <h3>Add Expense</h3>
+                <input type="date" id="b-date" class="edit-input"><input type="number" id="b-amt" placeholder="Amount" class="edit-input"><input type="text" id="b-note" placeholder="Item" class="edit-input"><button class="btn btn-primary" style="background:var(--secondary)" onclick="addBazar()">Add</button>
             </div>
-            <div class="card">
-                <h3>Bazar Records</h3>
-                <div class="table-wrap">
-                    <table><thead><tr><th>Date</th><th>Item</th><th>Amt</th><th class="admin-only hidden">X</th></tr></thead><tbody id="bazar-body"></tbody></table>
-                </div>
-            </div>
+            <div class="card"><div class="table-wrap"><table><tbody id="bazar-body"></tbody></table></div></div>
         </div>
 
         <div id="tab-members" class="tab-content hidden">
-            <div class="card admin-only hidden" id="admin-member-entry">
-                <h3>Member & Deposit</h3>
-                <input type="text" id="new-mem-name" class="edit-input" placeholder="Name">
-                <input type="number" id="new-mem-min" class="edit-input" placeholder="Min Meal" value="50">
-                <button class="btn btn-secondary" onclick="addMember()">Add Member</button>
-                <hr style="margin:20px 0">
-                <input type="date" id="dep-date" class="edit-input">
-                <select id="dep-member" class="edit-input"></select>
-                <input type="number" id="dep-amt" placeholder="Deposit Amt" class="edit-input">
-                <button class="btn btn-primary" onclick="addDeposit()">Save Deposit</button>
+            <div class="card admin-only hidden">
+                <h3>New Member / Deposit</h3>
+                <input type="text" id="new-mem-name" class="edit-input" placeholder="Name"><input type="number" id="new-mem-min" class="edit-input" placeholder="Min Meal" value="50"><button class="btn btn-primary" style="background:var(--secondary)" onclick="addMember()">Create</button>
+                <hr style="margin:1.5rem 0">
+                <input type="date" id="dep-date" class="edit-input"><select id="dep-member" class="edit-input"></select><input type="number" id="dep-amt" placeholder="Deposit Amount" class="edit-input"><button class="btn btn-primary" onclick="addDeposit()">Save</button>
             </div>
-            <div class="card">
-                <h3>Active Members</h3>
-                <div class="table-wrap"><table><tbody id="member-list-body"></tbody></table></div>
-            </div>
-            <div class="card">
-                <h3>Recent Deposits</h3>
-                <div class="table-wrap"><table><thead><tr><th>Date</th><th>Name</th><th>Amt</th><th class="admin-only hidden">X</th></tr></thead><tbody id="deposit-history-body"></tbody></table></div>
-            </div>
+            <div class="card"><h3>Member List</h3><div class="table-wrap"><table><tbody id="member-list-body"></tbody></table></div></div>
+            <div class="card"><h3>Recent Deposits</h3><div class="table-wrap"><table><tbody id="deposit-history-body"></tbody></table></div></div>
         </div>
 
         <div id="tab-settings" class="tab-content hidden">
-            <div class="card">
-                <h3>Keys</h3>
-                <label>Admin Key</label><input type="text" id="set-admin-key" class="edit-input">
-                <label>Viewer Key</label><input type="text" id="set-viewer-key" class="edit-input">
-                <button class="btn btn-primary" onclick="updateKeys()">Update Keys</button>
-            </div>
+            <div class="card"><h3>Cloud Keys</h3><label>Admin Key</label><input type="text" id="set-admin-key" class="edit-input"><label>Viewer Key</label><input type="text" id="set-viewer-key" class="edit-input"><button class="btn btn-primary" onclick="updateKeys()">Save Keys</button></div>
         </div>
     </div>
 </div>
@@ -190,117 +161,92 @@
     });
 
     window.save = function() {
-        if(!isAdmin) return alert("Viewer cannot save changes!");
+        if(!isAdmin) return;
         data.keys = keys;
         set(dataRef, data).catch(err => alert("Error: " + err.message));
         window.refreshUI();
     };
 
     window.refreshUI = function() {
+        const sBody = document.getElementById('summary-body');
+        if(!sBody) return;
+
         const selMonth = document.getElementById('filter-month').value;
         const selYear = document.getElementById('filter-year').value;
         const filterStr = `${selYear}-${selMonth}`;
         
-        // Month End Logic
         const lastDayDate = new Date(selYear, selMonth, 0); 
         const lastDayString = `${selYear}-${selMonth}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
         const isMonthFinished = data.meals && data.meals[lastDayString];
 
-        const indicator = document.getElementById('logic-indicator');
-        indicator.innerText = isMonthFinished ? "Month Finished: Min Rule Active" : "Month in Progress: Tracking Actual";
-        indicator.style.color = isMonthFinished ? "var(--secondary)" : "var(--warning)";
+        document.getElementById('logic-indicator').innerText = isMonthFinished ? "Month Finished: Min Rule Applied" : "Month in Progress: Showing Actual";
 
-        let totalBillable = 0, mActual = {}, mDeps = {}, periodDeps = 0;
-        (data.members || []).forEach(m => { mActual[m.id] = 0; mDeps[m.id] = 0; });
-        (data.deposits || []).forEach(d => { if(d.date.startsWith(filterStr)) { mDeps[d.mId] += parseFloat(d.amt); periodDeps += parseFloat(d.amt); } });
-        Object.entries(data.meals || {}).forEach(([date, entry]) => {
-            if(date.startsWith(filterStr)) {
-                Object.entries(entry).forEach(([id, qty]) => { if(mActual[id] !== undefined) mActual[id] += parseFloat(qty); });
-            }
-        });
+        let totalBillable = 0, mActualCounts = {}, mDepsSum = {}, periodIncome = 0;
+        (data.members || []).forEach(m => { mActualCounts[m.id] = 0; mDepsSum[m.id] = 0; });
+        (data.deposits || []).forEach(d => { if(d.date.startsWith(filterStr)) { mDepsSum[d.mId] += parseFloat(d.amt); periodIncome += parseFloat(d.amt); } });
+        
+        if (data.meals) {
+            Object.entries(data.meals).forEach(([date, entry]) => {
+                if(date.startsWith(filterStr)) {
+                    Object.entries(entry).forEach(([id, qty]) => { if(mActualCounts[id] !== undefined) mActualCounts[id] += parseFloat(qty); });
+                }
+            });
+        }
 
         const calcData = (data.members || []).map(m => {
-            const actual = mActual[m.id];
-            const min = m.minMeal || 50;
-            const billable = isMonthFinished ? (actual <= min ? min : actual) : actual;
+            const actual = mActualCounts[m.id] || 0;
+            const minSet = m.minMeal || 50;
+            const billable = isMonthFinished ? (actual <= minSet ? minSet : actual) : actual;
             totalBillable += billable;
-            return { ...m, actual, billable, minGoal: min };
+            return { ...m, actual, billable, minSet };
         });
 
         const totalBazar = (data.bazar || []).reduce((sum, b) => b.date.startsWith(filterStr) ? sum + parseFloat(b.amt) : sum, 0);
         const rate = totalBillable > 0 ? totalBazar / totalBillable : 0;
-        const avail = periodDeps - totalBazar;
+        const avail = periodIncome - totalBazar;
 
         document.getElementById('stat-meals').innerText = totalBillable.toFixed(1);
-        document.getElementById('stat-cost').innerText = totalBazar.toFixed(0);
-        document.getElementById('stat-balance').innerText = avail.toFixed(0);
-        document.getElementById('stat-rate').innerText = rate.toFixed(2);
+        document.getElementById('stat-cost').innerText = "₹" + totalBazar.toFixed(0);
+        document.getElementById('stat-balance').innerText = "₹" + avail.toFixed(0);
+        document.getElementById('stat-rate').innerText = "₹" + rate.toFixed(2);
         document.getElementById('balance-card').style.background = avail < 0 ? 'var(--danger)' : 'var(--warning)';
 
-        // Table Body
-        document.getElementById('summary-body').innerHTML = calcData.map(m => {
-            const cost = m.billable * rate;
-            const net = cost - mDeps[m.id];
-            return `<tr>
-                <td><b>${m.name}</b></td>
-                <td>₹${mDeps[m.id]}</td>
-                <td><div class="meal-main">${m.actual} / ${m.minGoal}</div><div class="meal-sub">Bill: ${m.billable}</div></td>
-                <td>₹${cost.toFixed(1)}</td>
-                <td style="color:${net > 0 ? 'var(--danger)' : 'var(--secondary)'}">
-                    <b>₹${Math.abs(net).toFixed(1)}</b>
-                    <span class="status-badge" style="background:${net > 0 ? '#fee2e2' : '#d1fae5'}">${net > 0 ? 'DUE' : 'SURPLUS'}</span>
-                </td>
-            </tr>`;
+        sBody.innerHTML = calcData.map(m => {
+            const cost = m.bill * rate;
+            const net = (m.billable * rate) - mDepsSum[m.id];
+            return `<tr><td><b>${m.name}</b></td><td>₹${mDepsSum[m.id]}</td><td><div class="meal-main">${m.actual} / ${m.minSet}</div><div class="meal-sub">Bill: ${m.billable}</div></td><td>₹${(m.billable * rate).toFixed(1)}</td><td style="color:${net > 0 ? 'red' : 'green'}"><b>₹${Math.abs(net).toFixed(1)}</b><span class="status-badge" style="background:${net > 0 ? '#fee2e2' : '#d1fae5'}">${net > 0 ? 'DUE' : 'SURPLUS'}</span></td></tr>`;
         }).join('');
 
-        // Handle Admin visibility for dynamically generated buttons
+        document.getElementById('dep-member').innerHTML = (data.members || []).map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+        if(isAdmin) {
+            document.getElementById('meal-inputs-area').innerHTML = (data.members || []).map(m => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:#f1f5f9; padding:10px; border-radius:10px"><b>${m.name}</b><input type="number" class="day-meal-val edit-input" style="width:80px; margin:0; text-align:center" data-id="${m.id}" step="0.5" value="0"></div>`).join('');
+        }
+        
         const mDates = Object.keys(data.meals || {}).sort().reverse();
         document.getElementById('meal-history-head').innerHTML = `<tr><th>Date</th>${(data.members || []).map(m => `<th>${m.name.substring(0,3)}</th>`).join('')}${isAdmin ? '<th>X</th>' : ''}</tr>`;
         document.getElementById('meal-history-body').innerHTML = mDates.map(d => `<tr><td><small>${d}</small></td>${(data.members || []).map(m => `<td>${data.meals[d][m.id] || 0}</td>`).join('')}${isAdmin ? `<td><button class="btn-del" onclick="delMealDate('${d}')">X</button></td>` : ''}</tr>`).join('');
-        
         document.getElementById('bazar-body').innerHTML = (data.bazar || []).slice().reverse().map((b, i) => `<tr><td>${b.date}</td><td>${b.note}</td><td>₹${b.amt}</td>${isAdmin ? `<td><button class="btn-del" onclick="delBazar(${data.bazar.length-1-i})">X</button></td>` : ''}</tr>`).join('');
-        
         document.getElementById('member-list-body').innerHTML = (data.members || []).map((m, i) => `<tr><td>${m.name}</td><td>Min: ${m.minMeal}</td>${isAdmin ? `<td><button class="btn-del" onclick="delMember(${i})">X</button></td>` : ''}</tr>`).join('');
-        
         document.getElementById('deposit-history-body').innerHTML = (data.deposits || []).slice().reverse().map((d, i) => {
             const m = data.members.find(mem => mem.id == d.mId);
             return `<tr><td>${d.date}</td><td>${m ? m.name : '?'}</td><td>₹${d.amt}</td>${isAdmin ? `<td><button class="btn-del" onclick="delDep(${data.deposits.length-1-i})">X</button></td>` : ''}</tr>`;
         }).join('');
     };
 
-    window.login = function(key) {
-        isAdmin = (key === keys.admin);
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userRole', isAdmin ? 'admin' : 'viewer');
-        
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-
-        // Toggle Admin UI elements
-        document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
-        
-        const now = new Date();
-        document.getElementById('filter-month').value = String(now.getMonth() + 1).padStart(2, '0');
-        document.getElementById('filter-year').value = now.getFullYear();
-        window.refreshUI();
-    };
-
-    // --- BUTTON ACTIONS (Check Admin status) ---
-    window.saveDailyMeals = function() { if(!isAdmin) return; const d = document.getElementById('meal-date').value; if(!d) return alert("Select Date"); const entry = {}; document.querySelectorAll('.day-meal-val').forEach(i => entry[i.dataset.id] = parseFloat(i.value) || 0); data.meals[d] = entry; window.save(); };
-    window.delMealDate = function(d) { if(!isAdmin) return; if(confirm("Delete meals for "+d+"?")) { delete data.meals[d]; window.save(); } };
-    window.addBazar = function() { if(!isAdmin) return; const d = document.getElementById('b-date').value, a = document.getElementById('b-amt').value; if(d && a) { data.bazar.push({amt: parseFloat(a), note: document.getElementById('b-note').value, date: d}); window.save(); } };
-    window.addDeposit = function() { if(!isAdmin) return; const d = document.getElementById('dep-date').value, m = document.getElementById('dep-member').value, a = document.getElementById('dep-amt').value; if(d && a && m) { data.deposits.push({mId: parseInt(m), amt: parseFloat(a), date: d}); window.save(); } };
-    window.addMember = function() { if(!isAdmin) return; const n = document.getElementById('new-mem-name').value, m = document.getElementById('new-mem-min').value; if(n) { data.members.push({id: Date.now(), name: n.toUpperCase(), minMeal: parseInt(m) || 50}); window.save(); } };
-    window.delMember = function(i) { if(!isAdmin) return; if(confirm("Remove?")) { data.members.splice(i, 1); window.save(); } };
-    window.delBazar = function(i) { if(!isAdmin) return; if(confirm("Delete?")) { data.bazar.splice(i, 1); window.save(); } };
-    window.delDep = function(i) { if(!isAdmin) return; if(confirm("Delete?")) { data.deposits.splice(i, 1); window.save(); } };
-    window.updateKeys = function() { if(!isAdmin) return; keys.admin = document.getElementById('set-admin-key').value.toUpperCase(); keys.viewer = document.getElementById('set-viewer-key').value.toUpperCase(); window.save(); alert("Keys Updated!"); };
-
     window.showTab = function(id, btn) { document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden')); document.getElementById('tab-'+id).classList.remove('hidden'); document.querySelectorAll('nav button').forEach(b => b.classList.remove('active')); btn.classList.add('active'); window.refreshUI(); };
+    window.login = function(key) { isAdmin = (key === keys.admin); localStorage.setItem('isLoggedIn', 'true'); localStorage.setItem('userRole', isAdmin ? 'admin' : 'viewer'); document.getElementById('login-screen').style.display = 'none'; document.getElementById('app').style.display = 'block'; document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin)); window.refreshUI(); };
     window.autoLogin = function() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) window.login(v); };
     window.checkLogin = function() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) window.login(v); else alert("Wrong Key"); };
     window.logout = function() { localStorage.removeItem('isLoggedIn'); location.reload(); };
-
+    window.saveDailyMeals = function() { if(!isAdmin) return; const d = document.getElementById('meal-date').value; if(!d) return alert("Select Date"); const entry = {}; document.querySelectorAll('.day-meal-val').forEach(i => entry[i.dataset.id] = parseFloat(i.value) || 0); data.meals[d] = entry; window.save(); };
+    window.delMealDate = function(d) { if(!isAdmin) return; if(confirm("Delete?")) { delete data.meals[d]; window.save(); } };
+    window.addBazar = function() { if(!isAdmin) return; const d = document.getElementById('b-date').value, a = document.getElementById('b-amt').value; if(d && a) { data.bazar.push({amt: parseFloat(a), note: document.getElementById('b-note').value, date: d}); window.save(); } };
+    window.addDeposit = function() { if(!isAdmin) return; const d = document.getElementById('dep-date').value, m = document.getElementById('dep-member').value, a = document.getElementById('dep-amt').value; if(d && a && m) { data.deposits.push({mId: parseInt(m), amt: parseFloat(a), date: d}); window.save(); } };
+    window.addMember = function() { if(!isAdmin) return; const n = document.getElementById('new-mem-name').value, m = document.getElementById('new-mem-min').value; if(n) { data.members.push({id: Date.now(), name: n.toUpperCase(), minMeal: parseInt(m) || 50}); window.save(); } };
+    window.delMember = function(i) { if(!isAdmin) return; data.members.splice(i, 1); window.save(); };
+    window.delBazar = function(i) { if(!isAdmin) return; data.bazar.splice(i, 1); window.save(); };
+    window.delDep = function(i) { if(!isAdmin) return; data.deposits.splice(i, 1); window.save(); };
+    window.updateKeys = function() { if(!isAdmin) return; keys.admin = document.getElementById('set-admin-key').value.toUpperCase(); keys.viewer = document.getElementById('set-viewer-key').value.toUpperCase(); window.save(); alert("Keys Updated!"); };
     if(localStorage.getItem('isLoggedIn') === 'true') window.login(localStorage.getItem('userRole') === 'admin' ? keys.admin : keys.viewer);
 </script>
 </body>
