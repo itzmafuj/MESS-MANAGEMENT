@@ -124,7 +124,7 @@
         .btn-del { background: #fee2e2; color: var(--danger); width: auto; padding: 5px 10px; font-size: 0.75rem; }
 
         .meal-main { font-size: 1.1rem; font-weight: 700; color: var(--dark); }
-        .meal-sub { font-size: 0.85rem; color: #64748b; margin-top: 2px; }
+        .meal-sub { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
         .currency { font-weight: bold; margin-right: 2px; }
         .status-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: block; margin-top: 4px;}
         .hidden { display: none !important; }
@@ -145,7 +145,7 @@
         <button class="active" onclick="showTab('dashboard', this)">Dashboard</button>
         <button onclick="showTab('meals', this)">Meal Records</button>
         <button onclick="showTab('bazar', this)">Bazar List</button>
-        <button onclick="showTab('members', this)">Member Deposits</button>
+        <button onclick="showTab('members', this)">Manage Members</button>
         <button id="nav-settings" onclick="showTab('settings', this)">Settings</button>
     </nav>
 
@@ -160,7 +160,7 @@
                 <h3>Monthly Balance Sheet</h3>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>Member Name</th><th>Total Deposit</th><th>Meal Count</th><th>Bill Cost</th><th>Net Balance</th></tr></thead>
+                        <thead><tr><th>Member</th><th>Total Deposit</th><th>Meal (Act/Min)</th><th>Bill Cost</th><th>Net Balance</th></tr></thead>
                         <tbody id="summary-body"></tbody>
                     </table>
                 </div>
@@ -201,15 +201,26 @@
 
         <div id="tab-members" class="tab-content hidden">
             <div class="card" id="admin-member-entry">
-                <h3>Record Member Deposit (Admin)</h3>
+                <h3>Add New Member (Admin)</h3>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <input type="text" id="new-mem-name" class="edit-input" placeholder="Member Name">
+                    <input type="number" id="new-mem-min" class="edit-input" placeholder="Min Meal (e.g. 50)" value="50">
+                </div>
+                <button class="btn btn-primary" style="background:var(--secondary)" onclick="addMember()">Add Member</button>
+                
+                <h3 style="margin-top:2rem">Add Deposit</h3>
                 <input type="date" id="dep-date" class="edit-input">
                 <select id="dep-member" class="edit-input"></select>
                 <input type="number" id="dep-amt" placeholder="Deposit Amount (₹)" class="edit-input">
                 <button class="btn btn-primary" onclick="addDeposit()">Save Deposit</button>
-                <hr style="margin:20px 0; opacity:0.1">
-                <div style="display:flex; gap:10px">
-                    <input type="text" id="new-mem-name" class="edit-input" placeholder="New Member Name" style="margin:0">
-                    <button class="btn btn-primary" style="background:var(--secondary); width:auto" onclick="addMember()">Add</button>
+            </div>
+            <div class="card">
+                <h3>Active Members List</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Name</th><th>Min Meal Setting</th><th>Action</th></tr></thead>
+                        <tbody id="member-list-body"></tbody>
+                    </table>
                 </div>
             </div>
             <div class="card">
@@ -234,8 +245,16 @@
 <script>
     let keys = JSON.parse(localStorage.getItem('messKeys')) || { admin: "MESS2026", viewer: "MESSMEAL" };
     let isAdmin = false;
+    // Added minMeal: 50 as default for existing members
     let data = JSON.parse(localStorage.getItem('messData')) || { 
-        members: [{id: 1, name: 'SAMIM'}, {id: 2, name: 'BAPPI'}, {id: 3, name: 'MAFUJ'}, {id: 4, name: 'RAJOB'}, {id: 5, name: 'JAHID'}, {id: 6, name: 'SORIFUL'}], 
+        members: [
+            {id: 1, name: 'SAMIM', minMeal: 50}, 
+            {id: 2, name: 'BAPPI', minMeal: 50}, 
+            {id: 3, name: 'MAFUJ', minMeal: 50}, 
+            {id: 4, name: 'RAJOB', minMeal: 30}, 
+            {id: 5, name: 'JAHID', minMeal: 50}, 
+            {id: 6, name: 'SORIFUL', minMeal: 50}
+        ], 
         meals: {}, bazar: [], deposits: [] 
     };
 
@@ -249,7 +268,6 @@
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app').style.display = 'block';
         document.getElementById('admin-meal-entry').classList.toggle('hidden', !isAdmin);
-        document.getElementById('admin-bazar-entry').classList.toggle('hidden', !isAdmin);
         document.getElementById('admin-member-entry').classList.toggle('hidden', !isAdmin);
         document.getElementById('nav-settings').classList.toggle('hidden', !isAdmin);
         refreshUI();
@@ -268,20 +286,34 @@
 
     function refreshUI() {
         document.getElementById('dep-member').innerHTML = data.members.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+        
+        // Admin: Show Daily Meal Inputs
         if(isAdmin) {
             document.getElementById('meal-inputs-area').innerHTML = data.members.map(m => `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:#f1f5f9; padding:10px; border-radius:10px">
                     <b>${m.name}</b><input type="number" class="day-meal-val edit-input" style="width:80px; margin:0; text-align:center" data-id="${m.id}" step="0.5" value="0">
                 </div>`).join('');
         }
+
+        // Member List with Delete Button
+        document.getElementById('member-list-body').innerHTML = data.members.map((m, index) => `
+            <tr>
+                <td><b>${m.name}</b></td>
+                <td>${m.minMeal || 50} Meals</td>
+                <td>${isAdmin ? `<button class="btn btn-del" onclick="delMember(${index})">Remove</button>` : '-'}</td>
+            </tr>`).join('');
+
         const dates = Object.keys(data.meals).sort().reverse();
         document.getElementById('meal-history-head').innerHTML = `<tr><th>Date</th>${data.members.map(m => `<th>${m.name}</th>`).join('')}</tr>`;
         document.getElementById('meal-history-body').innerHTML = dates.map(d => `<tr><td><small>${d}</small></td>${data.members.map(m => `<td>${data.meals[d][m.id] || 0}</td>`).join('')}</tr>`).join('');
+        
         document.getElementById('bazar-body').innerHTML = data.bazar.slice().reverse().map((b, i) => `<tr><td>${b.date}</td><td>${b.note}</td><td>₹${b.amt}</td><td>${isAdmin ? `<button class="btn btn-del" onclick="delBazar(${data.bazar.length-1-i})">Del</button>` : '-'}</td></tr>`).join('');
+        
         document.getElementById('deposit-history-body').innerHTML = data.deposits.slice().reverse().map((d, i) => {
             const m = data.members.find(mem => mem.id == d.mId);
             return `<tr><td>${d.date}</td><td>${m ? m.name : '?'}</td><td>₹${d.amt}</td><td>${isAdmin ? `<button class="btn btn-del" onclick="delDep(${data.deposits.length-1-i})">Del</button>` : '-'}</td></tr>`;
         }).join('');
+        
         calculate();
     }
 
@@ -300,19 +332,17 @@
 
         document.getElementById('summary-body').innerHTML = data.members.map(m => {
             const actCount = mMeals[m.id];
-            
-            // NEW MATH: Cost based on actual meals
+            const minReq = m.minMeal || 50;
             const billCost = actCount * rate;
-            
-            // BALANCE LOGIC: Bill Cost - Total Deposit
-            // Positive (+) means they owe money (DUE)
-            // Negative (-) means they have extra money (SURPLUS)
             const netBalance = billCost - mDeps[m.id];
             
             return `<tr>
                 <td><b>${m.name}</b></td>
                 <td><span class="currency">₹</span>${mDeps[m.id].toFixed(2)}</td>
-                <td><div class="meal-main">${actCount}</div></td>
+                <td>
+                    <div class="meal-main">${actCount}</div>
+                    <div class="meal-sub">Min: ${minReq}</div>
+                </td>
                 <td><span class="currency">₹</span>${billCost.toFixed(2)}</td>
                 <td style="color:${netBalance > 0 ? 'var(--danger)' : 'var(--secondary)'}">
                     <b><span class="currency">₹</span>${Math.abs(netBalance).toFixed(2)}</b>
@@ -337,14 +367,35 @@
         const d = document.getElementById('dep-date').value; const m = document.getElementById('dep-member').value; const a = document.getElementById('dep-amt').value;
         if(d && a && m) { data.deposits.push({mId: parseInt(m), amt: parseFloat(a), date: d}); save(); document.getElementById('dep-amt').value = ''; }
     }
-    function addMember() { const n = document.getElementById('new-mem-name').value; if(n) { data.members.push({id: Date.now(), name: n.toUpperCase()}); save(); } }
-    function delBazar(i) { if(confirm("Delete?")) { data.bazar.splice(i, 1); save(); } }
-    function delDep(i) { if(confirm("Delete?")) { data.deposits.splice(i, 1); save(); } }
+    
+    // NEW MEMBER ADD LOGIC
+    function addMember() { 
+        const n = document.getElementById('new-mem-name').value; 
+        const m = document.getElementById('new-mem-min').value || 50;
+        if(n) { 
+            data.members.push({id: Date.now(), name: n.toUpperCase(), minMeal: parseInt(m)}); 
+            save(); 
+            document.getElementById('new-mem-name').value = '';
+        } 
+    }
+
+    // DELETE MEMBER LOGIC
+    function delMember(i) {
+        if(confirm(`Are you sure you want to remove ${data.members[i].name}? This will not delete their past history but they won't show in new lists.`)) {
+            data.members.splice(i, 1);
+            save();
+        }
+    }
+
+    function delBazar(i) { if(confirm("Delete bazar record?")) { data.bazar.splice(i, 1); save(); } }
+    function delDep(i) { if(confirm("Delete deposit record?")) { data.deposits.splice(i, 1); save(); } }
+    
     function updateKeys() {
         keys.admin = document.getElementById('set-admin-key').value.toUpperCase();
         keys.viewer = document.getElementById('set-viewer-key').value.toUpperCase();
-        localStorage.setItem('messKeys', JSON.stringify(keys)); alert("Keys Updated Successfully");
+        localStorage.setItem('messKeys', JSON.stringify(keys)); alert("Keys Updated!");
     }
+    
     function save() { localStorage.setItem('messData', JSON.stringify(data)); refreshUI(); }
 </script>
 </body>
