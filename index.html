@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mess Management System </title>
+    <title>Mess Manager Pro 2026</title>
     <style>
         :root {
             --primary: #6366f1; --secondary: #10b981; --danger: #f43f5e;
@@ -55,7 +55,7 @@
         <button id="nav-meals" onclick="showTab('meals', this)">Meal History</button>
         <button id="nav-bazar" onclick="showTab('bazar', this)">Bazar List</button>
         <button id="nav-members" onclick="showTab('members', this)">Members</button>
-        <button id="nav-settings" onclick="showTab('settings', this)">Settings</button>
+        <button id="nav-settings" class="admin-only hidden" onclick="showTab('settings', this)">Settings</button>
     </nav>
 
     <div class="container">
@@ -93,7 +93,7 @@
         </div>
 
         <div id="tab-meals" class="tab-content hidden">
-            <div class="card" id="admin-meal-entry">
+            <div class="card admin-only hidden" id="admin-meal-entry">
                 <h3>Record Daily Meals</h3>
                 <input type="date" id="meal-date" class="edit-input">
                 <div id="meal-inputs-area"></div>
@@ -107,17 +107,51 @@
         </div>
 
         <div id="tab-bazar" class="tab-content hidden">
-            <div class="card" id="admin-bazar-entry"><h3>Add Bazar</h3><input type="date" id="b-date" class="edit-input"><input type="number" id="b-amt" placeholder="Amt" class="edit-input"><input type="text" id="b-note" placeholder="Item" class="edit-input"><button class="btn btn-secondary" onclick="addBazar()">Save</button></div>
-            <div class="card"><div class="table-wrap"><table><tbody id="bazar-body"></tbody></table></div></div>
+            <div class="card admin-only hidden" id="admin-bazar-entry">
+                <h3>Add Bazar Expense</h3>
+                <input type="date" id="b-date" class="edit-input">
+                <input type="number" id="b-amt" placeholder="Amt" class="edit-input">
+                <input type="text" id="b-note" placeholder="Item" class="edit-input">
+                <button class="btn btn-secondary" onclick="addBazar()">Save</button>
+            </div>
+            <div class="card">
+                <h3>Bazar Records</h3>
+                <div class="table-wrap">
+                    <table><thead><tr><th>Date</th><th>Item</th><th>Amt</th><th class="admin-only hidden">X</th></tr></thead><tbody id="bazar-body"></tbody></table>
+                </div>
+            </div>
         </div>
 
         <div id="tab-members" class="tab-content hidden">
-            <div class="card" id="admin-member-entry"><h3>Add Member/Deposit</h3><input type="text" id="new-mem-name" class="edit-input" placeholder="Name"><input type="number" id="new-mem-min" class="edit-input" placeholder="Min Meal" value="50"><button class="btn btn-secondary" onclick="addMember()">Add</button><hr><input type="date" id="dep-date" class="edit-input"><select id="dep-member" class="edit-input"></select><input type="number" id="dep-amt" placeholder="Amt" class="edit-input"><button class="btn btn-primary" onclick="addDeposit()">Save</button></div>
-            <div class="card"><h3>Active Members</h3><div class="table-wrap"><table><tbody id="member-list-body"></tbody></table></div></div>
-            <div class="card"><h3>Deposits</h3><div class="table-wrap"><table><tbody id="deposit-history-body"></tbody></table></div></div>
+            <div class="card admin-only hidden" id="admin-member-entry">
+                <h3>Member & Deposit</h3>
+                <input type="text" id="new-mem-name" class="edit-input" placeholder="Name">
+                <input type="number" id="new-mem-min" class="edit-input" placeholder="Min Meal" value="50">
+                <button class="btn btn-secondary" onclick="addMember()">Add Member</button>
+                <hr style="margin:20px 0">
+                <input type="date" id="dep-date" class="edit-input">
+                <select id="dep-member" class="edit-input"></select>
+                <input type="number" id="dep-amt" placeholder="Deposit Amt" class="edit-input">
+                <button class="btn btn-primary" onclick="addDeposit()">Save Deposit</button>
+            </div>
+            <div class="card">
+                <h3>Active Members</h3>
+                <div class="table-wrap"><table><tbody id="member-list-body"></tbody></table></div>
+            </div>
+            <div class="card">
+                <h3>Recent Deposits</h3>
+                <div class="table-wrap"><table><thead><tr><th>Date</th><th>Name</th><th>Amt</th><th class="admin-only hidden">X</th></tr></thead><tbody id="deposit-history-body"></tbody></table></div>
+            </div>
         </div>
 
-        <div id="tab-settings" class="tab-content hidden"><div class="card"><h3>Keys</h3><input type="text" id="set-admin-key" class="edit-input"><input type="text" id="set-viewer-key" class="edit-input"><button class="btn btn-primary" onclick="updateKeys()">Update Keys</button></div></div>
+        <div id="tab-settings" class="tab-content hidden">
+            <div class="card">
+                <h3>Keys</h3>
+                <label>Admin Key</label><input type="text" id="set-admin-key" class="edit-input">
+                <label>Viewer Key</label><input type="text" id="set-viewer-key" class="edit-input">
+                <button class="btn btn-primary" onclick="updateKeys()">Update Keys</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -156,6 +190,7 @@
     });
 
     window.save = function() {
+        if(!isAdmin) return alert("Viewer cannot save changes!");
         data.keys = keys;
         set(dataRef, data).catch(err => alert("Error: " + err.message));
         window.refreshUI();
@@ -166,13 +201,13 @@
         const selYear = document.getElementById('filter-year').value;
         const filterStr = `${selYear}-${selMonth}`;
         
-        // --- LOGIC: CHECK IF MONTH IS FINISHED ---
+        // Month End Logic
         const lastDayDate = new Date(selYear, selMonth, 0); 
         const lastDayString = `${selYear}-${selMonth}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
         const isMonthFinished = data.meals && data.meals[lastDayString];
 
         const indicator = document.getElementById('logic-indicator');
-        indicator.innerText = isMonthFinished ? "Month Finished: Min Rule Active" : "Month in Progress: Daily Track";
+        indicator.innerText = isMonthFinished ? "Month Finished: Min Rule Active" : "Month in Progress: Tracking Actual";
         indicator.style.color = isMonthFinished ? "var(--secondary)" : "var(--warning)";
 
         let totalBillable = 0, mActual = {}, mDeps = {}, periodDeps = 0;
@@ -184,11 +219,9 @@
             }
         });
 
-        // --- APPLY MINIMUM RULE ---
         const calcData = (data.members || []).map(m => {
             const actual = mActual[m.id];
             const min = m.minMeal || 50;
-            // Formula: If finished, apply min check. If not, billable is just actual.
             const billable = isMonthFinished ? (actual <= min ? min : actual) : actual;
             totalBillable += billable;
             return { ...m, actual, billable, minGoal: min };
@@ -204,6 +237,7 @@
         document.getElementById('stat-rate').innerText = rate.toFixed(2);
         document.getElementById('balance-card').style.background = avail < 0 ? 'var(--danger)' : 'var(--warning)';
 
+        // Table Body
         document.getElementById('summary-body').innerHTML = calcData.map(m => {
             const cost = m.billable * rate;
             const net = cost - mDeps[m.id];
@@ -219,58 +253,54 @@
             </tr>`;
         }).join('');
 
-        // Sidebar and History
-        document.getElementById('dep-member').innerHTML = (data.members || []).map(m => `<option value="${m.id}">${m.name}</option>`).join('');
-        if(isAdmin) {
-            document.getElementById('meal-inputs-area').innerHTML = (data.members || []).map(m => `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:#f1f5f9; padding:10px; border-radius:10px">
-                    <b>${m.name}</b><input type="number" class="day-meal-val edit-input" style="width:80px; margin:0; text-align:center" data-id="${m.id}" step="0.5" value="0">
-                </div>`).join('');
-        }
-        
+        // Handle Admin visibility for dynamically generated buttons
         const mDates = Object.keys(data.meals || {}).sort().reverse();
-        document.getElementById('meal-history-head').innerHTML = `<tr><th>Date</th>${(data.members || []).map(m => `<th>${m.name.substring(0,3)}</th>`).join('')}<th>X</th></tr>`;
-        document.getElementById('meal-history-body').innerHTML = mDates.map(d => `<tr><td><small>${d}</small></td>${(data.members || []).map(m => `<td>${data.meals[d][m.id] || 0}</td>`).join('')}<td>${isAdmin ? `<button class="btn-del" onclick="delMealDate('${d}')">X</button>` : '-'}</td></tr>`).join('');
-        document.getElementById('bazar-body').innerHTML = (data.bazar || []).slice().reverse().map((b, i) => `<tr><td>${b.date}</td><td>${b.note}</td><td>₹${b.amt}</td><td>${isAdmin ? `<button class="btn-del" onclick="delBazar(${data.bazar.length-1-i})">X</button>` : '-'}</td></tr>`).join('');
-        document.getElementById('member-list-body').innerHTML = (data.members || []).map((m, i) => `<tr><td>${m.name}</td><td>Min: ${m.minMeal}</td><td>${isAdmin ? `<button class="btn-del" onclick="delMember(${i})">X</button>` : '-'}</td></tr>`).join('');
+        document.getElementById('meal-history-head').innerHTML = `<tr><th>Date</th>${(data.members || []).map(m => `<th>${m.name.substring(0,3)}</th>`).join('')}${isAdmin ? '<th>X</th>' : ''}</tr>`;
+        document.getElementById('meal-history-body').innerHTML = mDates.map(d => `<tr><td><small>${d}</small></td>${(data.members || []).map(m => `<td>${data.meals[d][m.id] || 0}</td>`).join('')}${isAdmin ? `<td><button class="btn-del" onclick="delMealDate('${d}')">X</button></td>` : ''}</tr>`).join('');
+        
+        document.getElementById('bazar-body').innerHTML = (data.bazar || []).slice().reverse().map((b, i) => `<tr><td>${b.date}</td><td>${b.note}</td><td>₹${b.amt}</td>${isAdmin ? `<td><button class="btn-del" onclick="delBazar(${data.bazar.length-1-i})">X</button></td>` : ''}</tr>`).join('');
+        
+        document.getElementById('member-list-body').innerHTML = (data.members || []).map((m, i) => `<tr><td>${m.name}</td><td>Min: ${m.minMeal}</td>${isAdmin ? `<td><button class="btn-del" onclick="delMember(${i})">X</button></td>` : ''}</tr>`).join('');
+        
         document.getElementById('deposit-history-body').innerHTML = (data.deposits || []).slice().reverse().map((d, i) => {
             const m = data.members.find(mem => mem.id == d.mId);
-            return `<tr><td>${d.date}</td><td>${m ? m.name : '?'}</td><td>₹${d.amt}</td><td>${isAdmin ? `<button class="btn-del" onclick="delDep(${data.deposits.length-1-i})">X</button>` : '-'}</td></tr>`;
+            return `<tr><td>${d.date}</td><td>${m ? m.name : '?'}</td><td>₹${d.amt}</td>${isAdmin ? `<td><button class="btn-del" onclick="delDep(${data.deposits.length-1-i})">X</button></td>` : ''}</tr>`;
         }).join('');
     };
 
-    window.showTab = function(id, btn) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-        document.getElementById('tab-'+id).classList.remove('hidden');
-        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    window.login = function(key) {
+        isAdmin = (key === keys.admin);
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userRole', isAdmin ? 'admin' : 'viewer');
+        
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+
+        // Toggle Admin UI elements
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
+        
+        const now = new Date();
+        document.getElementById('filter-month').value = String(now.getMonth() + 1).padStart(2, '0');
+        document.getElementById('filter-year').value = now.getFullYear();
         window.refreshUI();
     };
 
+    // --- BUTTON ACTIONS (Check Admin status) ---
+    window.saveDailyMeals = function() { if(!isAdmin) return; const d = document.getElementById('meal-date').value; if(!d) return alert("Select Date"); const entry = {}; document.querySelectorAll('.day-meal-val').forEach(i => entry[i.dataset.id] = parseFloat(i.value) || 0); data.meals[d] = entry; window.save(); };
+    window.delMealDate = function(d) { if(!isAdmin) return; if(confirm("Delete meals for "+d+"?")) { delete data.meals[d]; window.save(); } };
+    window.addBazar = function() { if(!isAdmin) return; const d = document.getElementById('b-date').value, a = document.getElementById('b-amt').value; if(d && a) { data.bazar.push({amt: parseFloat(a), note: document.getElementById('b-note').value, date: d}); window.save(); } };
+    window.addDeposit = function() { if(!isAdmin) return; const d = document.getElementById('dep-date').value, m = document.getElementById('dep-member').value, a = document.getElementById('dep-amt').value; if(d && a && m) { data.deposits.push({mId: parseInt(m), amt: parseFloat(a), date: d}); window.save(); } };
+    window.addMember = function() { if(!isAdmin) return; const n = document.getElementById('new-mem-name').value, m = document.getElementById('new-mem-min').value; if(n) { data.members.push({id: Date.now(), name: n.toUpperCase(), minMeal: parseInt(m) || 50}); window.save(); } };
+    window.delMember = function(i) { if(!isAdmin) return; if(confirm("Remove?")) { data.members.splice(i, 1); window.save(); } };
+    window.delBazar = function(i) { if(!isAdmin) return; if(confirm("Delete?")) { data.bazar.splice(i, 1); window.save(); } };
+    window.delDep = function(i) { if(!isAdmin) return; if(confirm("Delete?")) { data.deposits.splice(i, 1); window.save(); } };
+    window.updateKeys = function() { if(!isAdmin) return; keys.admin = document.getElementById('set-admin-key').value.toUpperCase(); keys.viewer = document.getElementById('set-viewer-key').value.toUpperCase(); window.save(); alert("Keys Updated!"); };
+
+    window.showTab = function(id, btn) { document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden')); document.getElementById('tab-'+id).classList.remove('hidden'); document.querySelectorAll('nav button').forEach(b => b.classList.remove('active')); btn.classList.add('active'); window.refreshUI(); };
     window.autoLogin = function() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) window.login(v); };
     window.checkLogin = function() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) window.login(v); else alert("Wrong Key"); };
-    window.login = function(key) {
-        isAdmin = (key === keys.admin);
-        localStorage.setItem('isLoggedIn', 'true'); localStorage.setItem('userRole', isAdmin ? 'admin' : 'viewer');
-        document.getElementById('login-screen').style.display = 'none'; document.getElementById('app').style.display = 'block';
-        const now = new Date(); document.getElementById('filter-month').value = String(now.getMonth() + 1).padStart(2, '0'); document.getElementById('filter-year').value = now.getFullYear();
-        window.refreshUI();
-    };
     window.logout = function() { localStorage.removeItem('isLoggedIn'); location.reload(); };
-    window.saveDailyMeals = function() {
-        const d = document.getElementById('meal-date').value; if(!d) return alert("Select Date");
-        const entry = {}; document.querySelectorAll('.day-meal-val').forEach(i => entry[i.dataset.id] = parseFloat(i.value) || 0);
-        data.meals[d] = entry; window.save();
-    };
-    window.delMealDate = function(d) { if(confirm("Delete meals?")) { delete data.meals[d]; window.save(); } };
-    window.addBazar = function() { const d = document.getElementById('b-date').value, a = document.getElementById('b-amt').value; if(d && a) { data.bazar.push({amt: parseFloat(a), note: document.getElementById('b-note').value, date: d}); window.save(); } };
-    window.addDeposit = function() { const d = document.getElementById('dep-date').value, m = document.getElementById('dep-member').value, a = document.getElementById('dep-amt').value; if(d && a && m) { data.deposits.push({mId: parseInt(m), amt: parseFloat(a), date: d}); window.save(); } };
-    window.addMember = function() { const n = document.getElementById('new-mem-name').value, m = document.getElementById('new-mem-min').value; if(n) { data.members.push({id: Date.now(), name: n.toUpperCase(), minMeal: parseInt(m) || 50}); window.save(); } };
-    window.delMember = function(i) { if(confirm("Remove?")) { data.members.splice(i, 1); window.save(); } };
-    window.delBazar = function(i) { if(confirm("Delete?")) { data.bazar.splice(i, 1); window.save(); } };
-    window.delDep = function(i) { if(confirm("Delete?")) { data.deposits.splice(i, 1); window.save(); } };
-    window.updateKeys = function() { keys.admin = document.getElementById('set-admin-key').value.toUpperCase(); keys.viewer = document.getElementById('set-viewer-key').value.toUpperCase(); window.save(); alert("Keys Updated!"); };
-    
+
     if(localStorage.getItem('isLoggedIn') === 'true') window.login(localStorage.getItem('userRole') === 'admin' ? keys.admin : keys.viewer);
 </script>
 </body>
