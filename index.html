@@ -148,7 +148,7 @@
     </div>
 </div>
 
-<div id="app">
+<div id="app" style="display:none;">
     <nav>
         <button class="active" onclick="showTab('dashboard', this)">Dashboard</button>
         <button onclick="showTab('meals', this)">Meal Records</button>
@@ -277,9 +277,9 @@
 </div>
 
 <script>
-    let keys = JSON.parse(localStorage.getItem('messKeys')) || { admin: "MESS2026", viewer: "MESSMEAL" };
     let isAdmin = false;
-    let data = JSON.parse(localStorage.getItem('messData')) || { 
+    let keys = JSON.parse(localStorage.getItem('messKeys')) || { admin: "MESS2026", viewer: "MESSMEAL" };
+    let data = { 
         members: [
             {id: 1, name: 'SAMIM', minMeal: 50}, 
             {id: 2, name: 'BAPPI', minMeal: 50}, 
@@ -290,48 +290,78 @@
         ], 
         meals: {}, bazar: [], deposits: [] 
     };
+</script>
 
-    // Auto-login logic
-    function autoLogin() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) login(v); }
-    function checkLogin() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) login(v); else alert("Incorrect Key"); }
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    function login(key) {
+    const firebaseConfig = {
+        apiKey: "AIzaSyAnfWzHfN2qBGw68lOkTttSZ3Mz3D0T274",
+        authDomain: "messmenegment.firebaseapp.com",
+        databaseURL: "https://messmenegment-default-rtdb.firebaseio.com",
+        projectId: "messmenegment",
+        storageBucket: "messmenegment.firebasestorage.app",
+        messagingSenderId: "365715103776",
+        appId: "1:365715103776:web:32af4ed2537cb806341c45",
+        measurementId: "G-53L55JYM5W"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const dataRef = ref(db, 'messData');
+
+    // 1. Sync from Cloud
+    onValue(dataRef, (snapshot) => {
+        const cloudData = snapshot.val();
+        if (cloudData) {
+            data = cloudData;
+            if (!data.members) data.members = [];
+            if (!data.meals) data.meals = {};
+            if (!data.bazar) data.bazar = [];
+            if (!data.deposits) data.deposits = [];
+            window.refreshUI();
+        }
+    });
+
+    // 2. Save to Cloud
+    window.save = function() {
+        set(dataRef, data).catch(err => alert("Sync Error: " + err.message));
+        window.refreshUI();
+    };
+
+    // --- Core Logic ---
+    window.autoLogin = function() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) window.login(v); }
+    window.checkLogin = function() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) window.login(v); else alert("Incorrect Key"); }
+
+    window.login = function(key) {
         isAdmin = (key === keys.admin);
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('userRole', isAdmin ? 'admin' : 'viewer');
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app').style.display = 'block';
         
-        // Hide Admin controls for viewers
         document.getElementById('admin-meal-entry').classList.toggle('hidden', !isAdmin);
         document.getElementById('admin-member-entry').classList.toggle('hidden', !isAdmin);
         document.getElementById('nav-settings').classList.toggle('hidden', !isAdmin);
         
-        // Set current month/year as default filters
         const now = new Date();
         document.getElementById('filter-month').value = String(now.getMonth() + 1).padStart(2, '0');
         document.getElementById('filter-year').value = now.getFullYear();
-        
-        refreshUI();
-    }
-
-    function logout() { localStorage.removeItem('isLoggedIn'); location.reload(); }
-
-    window.onload = () => { 
-        if(localStorage.getItem('isLoggedIn') === 'true') { 
-            login(localStorage.getItem('userRole') === 'admin' ? keys.admin : keys.viewer); 
-        } 
+        window.refreshUI();
     };
 
-    function showTab(id, btn) {
+    window.logout = function() { localStorage.removeItem('isLoggedIn'); location.reload(); };
+
+    window.showTab = function(id, btn) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
         document.getElementById('tab-'+id).classList.remove('hidden');
         document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        refreshUI();
-    }
+        window.refreshUI();
+    };
 
-    function refreshUI() {
+    window.refreshUI = function() {
         document.getElementById('dep-member').innerHTML = data.members.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
         
         if(isAdmin) {
@@ -355,44 +385,27 @@
             return `<tr><td>${d.date}</td><td>${m ? m.name : '?'}</td><td>₹${d.amt}</td><td>${isAdmin ? `<button class="btn btn-del" onclick="delDep(${data.deposits.length-1-i})">Del</button>` : '-'}</td></tr>`;
         }).join('');
         
-        calculate();
-    }
+        window.calculate();
+    };
 
-    function calculate() {
+    window.calculate = function() {
         const selMonth = document.getElementById('filter-month').value;
         const selYear = document.getElementById('filter-year').value;
         const filterPrefix = `${selYear}-${selMonth}`;
 
-        let totalActMeals = 0; 
-        let mMeals = {}; 
-        let mDeps = {};
-
+        let totalActMeals = 0, mMeals = {}, mDeps = {};
         data.members.forEach(m => { mMeals[m.id] = 0; mDeps[m.id] = 0; });
 
-        // Filter Deposits
-        data.deposits.forEach(d => {
-            if(d.date.startsWith(filterPrefix)) {
-                if(mDeps[d.mId] !== undefined) mDeps[d.mId] += parseFloat(d.amt);
-            }
-        });
-
-        // Filter Meals
+        data.deposits.forEach(d => { if(d.date.startsWith(filterPrefix)) mDeps[d.mId] += parseFloat(d.amt); });
         Object.entries(data.meals).forEach(([date, dayEntry]) => {
             if(date.startsWith(filterPrefix)) {
                 Object.entries(dayEntry).forEach(([id, count]) => {
-                    if(mMeals[id] !== undefined) {
-                        mMeals[id] += parseFloat(count);
-                        totalActMeals += parseFloat(count);
-                    }
+                    if(mMeals[id] !== undefined) { mMeals[id] += parseFloat(count); totalActMeals += parseFloat(count); }
                 });
             }
         });
 
-        // Filter Bazar
-        const totalBazar = data.bazar.reduce((sum, b) => {
-            return b.date.startsWith(filterPrefix) ? sum + parseFloat(b.amt) : sum;
-        }, 0);
-
+        const totalBazar = data.bazar.reduce((sum, b) => b.date.startsWith(filterPrefix) ? sum + parseFloat(b.amt) : sum, 0);
         const rate = totalActMeals > 0 ? totalBazar / totalActMeals : 0;
 
         document.getElementById('stat-meals').innerText = totalActMeals;
@@ -400,54 +413,48 @@
         document.getElementById('stat-rate').innerText = rate.toFixed(2);
 
         document.getElementById('summary-body').innerHTML = data.members.map(m => {
-            const actCount = mMeals[m.id];
-            const minReq = m.minMeal || 50;
-            const billCost = actCount * rate;
-            const netBalance = billCost - mDeps[m.id];
-            
+            const actCount = mMeals[m.id], minReq = m.minMeal || 50, billCost = actCount * rate, netBalance = billCost - mDeps[m.id];
             return `<tr>
-                <td><b>${m.name}</b></td>
-                <td>₹${mDeps[m.id].toFixed(0)}</td>
+                <td><b>${m.name}</b></td><td>₹${mDeps[m.id].toFixed(0)}</td>
                 <td><div class="meal-main">${actCount}</div><div class="meal-sub">Min: ${minReq}</div></td>
                 <td>₹${billCost.toFixed(1)}</td>
                 <td style="color:${netBalance > 0 ? 'var(--danger)' : 'var(--secondary)'}">
                     <b>₹${Math.abs(netBalance).toFixed(1)}</b>
-                    <span class="status-badge" style="background:${netBalance > 0 ? '#fee2e2' : '#d1fae5'}">
-                        ${netBalance > 0 ? 'DUE' : 'SURPLUS'}
-                    </span>
-                </td>
-            </tr>`;
+                    <span class="status-badge" style="background:${netBalance > 0 ? '#fee2e2' : '#d1fae5'}">${netBalance > 0 ? 'DUE' : 'SURPLUS'}</span>
+                </td></tr>`;
         }).join('');
-    }
+    };
 
-    // Database Actions
-    function saveDailyMeals() {
+    window.saveDailyMeals = function() {
         const d = document.getElementById('meal-date').value; if(!d) return alert("Select Date");
         const entry = {}; document.querySelectorAll('.day-meal-val').forEach(i => entry[i.dataset.id] = parseFloat(i.value) || 0);
-        data.meals[d] = entry; save();
-    }
-    function addBazar() {
-        const d = document.getElementById('b-date').value; const a = document.getElementById('b-amt').value;
-        if(d && a) { data.bazar.push({amt: parseFloat(a), note: document.getElementById('b-note').value, date: d}); save(); }
-    }
-    function addDeposit() {
-        const d = document.getElementById('dep-date').value; const m = document.getElementById('dep-member').value; const a = document.getElementById('dep-amt').value;
-        if(d && a && m) { data.deposits.push({mId: parseInt(m), amt: parseFloat(a), date: d}); save(); document.getElementById('dep-amt').value = ''; }
-    }
-    function addMember() { 
-        const n = document.getElementById('new-mem-name').value; 
-        const m = document.getElementById('new-mem-min').value || 50;
-        if(n) { data.members.push({id: Date.now(), name: n.toUpperCase(), minMeal: parseInt(m)}); save(); document.getElementById('new-mem-name').value = ''; } 
-    }
-    function delMember(i) { if(confirm(`Remove ${data.members[i].name}?`)) { data.members.splice(i, 1); save(); } }
-    function delBazar(i) { if(confirm("Delete bazar record?")) { data.bazar.splice(i, 1); save(); } }
-    function delDep(i) { if(confirm("Delete deposit record?")) { data.deposits.splice(i, 1); save(); } }
-    function updateKeys() {
+        data.meals[d] = entry; window.save();
+    };
+    window.addBazar = function() {
+        const d = document.getElementById('b-date').value, a = document.getElementById('b-amt').value;
+        if(d && a) { data.bazar.push({amt: parseFloat(a), note: document.getElementById('b-note').value, date: d}); window.save(); }
+    };
+    window.addDeposit = function() {
+        const d = document.getElementById('dep-date').value, m = document.getElementById('dep-member').value, a = document.getElementById('dep-amt').value;
+        if(d && a && m) { data.deposits.push({mId: parseInt(m), amt: parseFloat(a), date: d}); window.save(); document.getElementById('dep-amt').value = ''; }
+    };
+    window.addMember = function() { 
+        const n = document.getElementById('new-mem-name').value, m = document.getElementById('new-mem-min').value || 50;
+        if(n) { data.members.push({id: Date.now(), name: n.toUpperCase(), minMeal: parseInt(m)}); window.save(); document.getElementById('new-mem-name').value = ''; } 
+    };
+    window.delMember = function(i) { if(confirm(`Remove ${data.members[i].name}?`)) { data.members.splice(i, 1); window.save(); } };
+    window.delBazar = function(i) { if(confirm("Delete bazar record?")) { data.bazar.splice(i, 1); window.save(); } };
+    window.delDep = function(i) { if(confirm("Delete deposit record?")) { data.deposits.splice(i, 1); window.save(); } };
+    window.updateKeys = function() {
         keys.admin = document.getElementById('set-admin-key').value.toUpperCase();
         keys.viewer = document.getElementById('set-viewer-key').value.toUpperCase();
         localStorage.setItem('messKeys', JSON.stringify(keys)); alert("Keys Updated!");
+    };
+
+    // Auto-login Check
+    if(localStorage.getItem('isLoggedIn') === 'true') { 
+        window.login(localStorage.getItem('userRole') === 'admin' ? keys.admin : keys.viewer); 
     }
-    function save() { localStorage.setItem('messData', JSON.stringify(data)); refreshUI(); }
 </script>
 </body>
 </html>
