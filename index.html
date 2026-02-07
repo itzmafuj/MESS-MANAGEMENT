@@ -3,16 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mess Management System</title>
+    <title>Mess Buddy</title>
     <style>
         :root {
-            --primary: #6366f1; --secondary: #10b981; --danger: #f43f5e;
+            --primary: #f43f5e; /* Matching the logo red */
+            --secondary: #10b981; --danger: #f43f5e;
             --warning: #f59e0b; --dark: #1e293b; --light: #f8fafc;
             --glass: rgba(255, 255, 255, 0.95); --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
         body { font-family: 'Inter', sans-serif; background: #e2e8f0; color: var(--dark); margin: 0; min-height: 100vh; }
+        
+        /* Login Screen Updates */
         #login-screen { position: fixed; inset: 0; background: var(--dark); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .login-card { background: var(--glass); padding: 2.5rem; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
+        .login-card { background: var(--glass); padding: 2.5rem; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); }
+        .app-logo { width: 100px; height: auto; margin-bottom: 1rem; }
+        .dev-credit { font-size: 0.8rem; color: #64748b; margin-top: 1.5rem; font-weight: 500; }
+        
         nav { background: var(--glass); backdrop-filter: blur(10px); padding: 0.75rem; display: flex; gap: 10px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); overflow-x: auto; }
         nav button { padding: 0.8rem 1.2rem; border: none; border-radius: 12px; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; white-space: nowrap; }
         nav button.active { background: var(--primary); color: white; }
@@ -42,9 +48,11 @@
 
 <div id="login-screen">
     <div class="login-card">
-        <h2 style="color:var(--primary); margin-bottom: 1.5rem;">Mess Manager 2026</h2>
+        <img src="img.jpeg" alt="Mess Buddy Logo" class="app-logo">
+        <h2 style="color:var(--dark); margin: 0 0 1.5rem 0;">Mess Buddy</h2>
         <input type="password" id="pass" placeholder="Enter Access Key" oninput="autoLogin()" class="edit-input">
         <button class="btn btn-primary" onclick="checkLogin()">Unlock System</button>
+        <div class="dev-credit">Developed by - sh1nzo Tech</div>
     </div>
 </div>
 
@@ -247,7 +255,6 @@
 
     window.login = function(key) {
         isAdmin = (key === keys.admin);
-        localStorage.setItem('isLoggedIn', 'true'); localStorage.setItem('userRole', isAdmin ? 'admin' : 'viewer');
         document.getElementById('login-screen').style.display = 'none'; document.getElementById('app').style.display = 'block';
         document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
         
@@ -263,7 +270,7 @@
 
     window.autoLogin = function() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) window.login(v); };
     window.checkLogin = function() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) window.login(v); else alert("Wrong Key"); };
-    window.logout = function() { localStorage.removeItem('isLoggedIn'); location.reload(); };
+    window.logout = function() { location.reload(); }; // Just reload to show login screen again
     window.saveDailyMeals = function() { if(!isAdmin) return; const d = document.getElementById('meal-date').value; if(!d) return alert("Select Date"); const entry = {}; document.querySelectorAll('.day-meal-val').forEach(i => entry[i.dataset.id] = parseFloat(i.value) || 0); data.meals[d] = entry; window.save(); };
     window.delMealDate = function(d) { if(!isAdmin) return; if(confirm("Delete?")) { delete data.meals[d]; window.save(); } };
     window.addBazar = function() { if(!isAdmin) return; const d = document.getElementById('b-date').value, a = document.getElementById('b-amt').value; if(d && a) { data.bazar.push({amt: parseFloat(a), note: document.getElementById('b-note').value, date: d}); window.save(); } };
@@ -274,7 +281,6 @@
     window.delDep = function(i) { if(!isAdmin) return; data.deposits.splice(i, 1); window.save(); };
     window.updateKeys = function() { if(!isAdmin) return; keys.admin = document.getElementById('set-admin-key').value.toUpperCase(); keys.viewer = document.getElementById('set-viewer-key').value.toUpperCase(); window.save(); alert("Keys Updated!"); };
 
-    if(localStorage.getItem('isLoggedIn') === 'true') window.login(localStorage.getItem('userRole') === 'admin' ? keys.admin : keys.viewer);
 </script>
 </body>
 </html>
