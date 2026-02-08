@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mess Buddy | Premium Secure</title>
+    <title>Mess Buddy | Real-Time Secure</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -17,7 +17,6 @@
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s ease; }
         body { background: radial-gradient(circle at top right, #fdf2f2, #f8fafc); margin: 0; min-height: 100vh; overflow-x: hidden; }
 
-        /* --- Strict Login Screen --- */
         #login-screen { position: fixed; inset: 0; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 2000; }
         .login-card { 
             background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);
@@ -27,29 +26,32 @@
         .login-card h2 { color: white; margin: 0; font-size: 1.8rem; }
         .tagline { color: #94a3b8; font-size: 0.9rem; margin: 8px 0 2rem; }
 
-        .edit-input { 
-            width: 100%; padding: 1rem; border: 1.5px solid #e2e8f0; border-radius: var(--radius-md);
-            background: white; font-size: 1rem; margin-bottom: 1rem;
-        }
+        .edit-input { width: 100%; padding: 1rem; border: 1.5px solid #e2e8f0; border-radius: var(--radius-md); background: white; font-size: 1rem; margin-bottom: 1rem; }
         .login-card .edit-input { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white; text-align: center; }
 
         .btn { padding: 1rem; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; width: 100%; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-primary { background: var(--primary); color: white; }
 
-        /* --- App UI --- */
-        nav { 
-            background: var(--card-bg); backdrop-filter: blur(15px); padding: 0.8rem; display: flex; justify-content: center; gap: 8px;
-            position: sticky; top: 10px; z-index: 1000; margin: 10px 1rem; border-radius: 18px; box-shadow: var(--shadow);
+        #toast { 
+            position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
+            background: var(--accent); color: white; padding: 1rem 2rem; border-radius: 100px;
+            z-index: 3000; box-shadow: 0 10px 15px rgba(0,0,0,0.2); font-weight: bold;
+            transition: top 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
         }
+        #toast.show { top: 20px; }
+
+        nav { background: var(--card-bg); backdrop-filter: blur(15px); padding: 0.8rem; display: flex; justify-content: center; gap: 8px; position: sticky; top: 10px; z-index: 1000; margin: 10px 1rem; border-radius: 18px; box-shadow: var(--shadow); }
         nav button { padding: 0.6rem 1rem; border: none; border-radius: 12px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; }
         nav button.active { background: white; color: var(--primary); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
 
         .container { max-width: 1000px; margin: 1.5rem auto; padding: 0 1rem; }
         .card { background: white; border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); border: 1px solid #f1f5f9; position: relative; }
         
+        .notice-card { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border: none; }
+        .notice-text { font-size: 1rem; line-height: 1.5; color: #f1f5f9; font-weight: 600; }
+
         .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
         .stat-box { padding: 1.2rem; border-radius: var(--radius-md); color: white; text-align: center; }
-        .stat-box span { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
         .stat-box h2 { margin: 5px 0 0; font-size: 1.5rem; }
 
         .blue { background: linear-gradient(135deg, #6366f1, #4f46e5); }
@@ -65,9 +67,8 @@
         .status-badge { padding: 4px 10px; border-radius: 100px; font-size: 0.65rem; font-weight: 800; display: block; margin-top: 4px; text-align: center; }
         .hidden { display: none !important; }
 
-        /* QR Styles */
         .qr-section { background: #fdf2f2; border: 2px dashed var(--primary); border-radius: var(--radius-md); padding: 1.5rem; text-align: center; }
-        #display-qr { max-width: 180px; border-radius: 12px; margin: 15px auto; box-shadow: 0 10px 15px rgba(0,0,0,0.1); display: block; }
+        #display-qr { max-width: 180px; border-radius: 12px; margin: 15px auto; display: block; }
 
         @media (max-width: 600px) {
             nav { position: fixed; bottom: 10px; top: auto; width: calc(100% - 2rem); margin: 0 1rem; }
@@ -76,6 +77,8 @@
     </style>
 </head>
 <body>
+
+<div id="toast">🔔 New Notice Received!</div>
 
 <div id="login-screen">
     <div class="login-card">
@@ -98,13 +101,18 @@
 
     <div class="container">
         <div id="tab-dashboard" class="tab-content">
+            <div class="card notice-card hidden" id="notice-display-card">
+                <h3 style="margin: 0 0 10px 0; color: var(--primary); font-size: 0.7rem; text-transform: uppercase;">Broadcast Message</h3>
+                <div class="notice-text" id="current-notice"></div>
+            </div>
+
             <div class="card">
                 <div class="qr-section">
                     <h3 style="margin: 0; color: var(--primary); font-size: 1.1rem;">Scan & Pay Dues</h3>
                     <div id="qr-viewer-area">
                         <div id="no-qr-msg" style="padding:20px; color:#94a3b8;">No QR Uploaded</div>
                         <img id="display-qr" class="hidden" src="" alt="Payment QR">
-                        <a id="download-link" class="hidden" href="" download="Mess-Buddy-QR.png" style="text-decoration: none; color: var(--accent); font-weight: 800; font-size: 0.8rem; display: inline-block; margin-top: 10px;">📥 SAVE QR TO GALLERY</a>
+                        <a id="download-link" class="hidden" href="" download="Mess-Buddy-QR.png" style="text-decoration: none; color: var(--accent); font-weight: 800; font-size: 0.8rem; display: inline-block; margin-top: 10px;">📥 SAVE QR</a>
                     </div>
                 </div>
             </div>
@@ -120,21 +128,21 @@
             </div>
 
             <div class="grid-stats">
-                <div class="stat-box blue"><span>Meals</span><h2 id="stat-meals">0</h2></div>
+                <div class="stat-box blue"><span>Total Meals</span><h2 id="stat-meals">0</h2></div>
                 <div class="stat-box green"><span>Total Cost</span><h2 id="stat-cost">₹0</h2></div>
-                <div class="stat-box gold" id="balance-card"><span>Cash</span><h2 id="stat-balance">₹0</h2></div>
-                <div class="stat-box red"><span>Rate</span><h2 id="stat-rate">₹0</h2></div>
+                <div class="stat-box gold" id="balance-card"><span>Cash flow</span><h2 id="stat-balance">₹0</h2></div>
+                <div class="stat-box red"><span>Meal Rate</span><h2 id="stat-rate">₹0</h2></div>
             </div>
 
             <div class="card">
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>Member</th><th>Deposit</th><th>Activity</th><th>Cost</th><th>Status</th></tr></thead>
+                        <thead><tr><th>Member</th><th>Deposit</th><th>Meals</th><th>Cost</th><th>Status</th></tr></thead>
                         <tbody id="summary-body"></tbody>
                     </table>
                 </div>
             </div>
-            <button class="btn" style="background:#e2e8f0; margin-bottom: 2rem;" onclick="logout()">Lock & Exit</button>
+            <button class="btn" style="background:#e2e8f0; margin-bottom: 2rem;" onclick="logout()">Lock System</button>
         </div>
 
         <div id="tab-meals" class="tab-content hidden">
@@ -144,53 +152,43 @@
                 <div id="meal-inputs-area"></div>
                 <button class="btn btn-primary" onclick="saveDailyMeals()">Save Record</button>
             </div>
-            <div class="card"><h3>Meal History</h3><div class="table-wrap"><table><thead id="meal-history-head"></thead><tbody id="meal-history-body"></tbody></table></div></div>
+            <div class="card"><div class="table-wrap"><table><thead id="meal-history-head"></thead><tbody id="meal-history-body"></tbody></table></div></div>
         </div>
 
         <div id="tab-bazar" class="tab-content hidden">
-            <div class="card admin-only hidden">
-                <h3>Add Expense</h3>
-                <input type="date" id="b-date" class="edit-input"><input type="number" id="b-amt" placeholder="Amount" class="edit-input"><input type="text" id="b-note" placeholder="Item" class="edit-input">
-                <button class="btn btn-primary" style="background:var(--success)" onclick="addBazar()">Add Expense</button>
-            </div>
+            <div class="card admin-only hidden"><h3>Add Expense</h3><input type="date" id="b-date" class="edit-input"><input type="number" id="b-amt" placeholder="Amount" class="edit-input"><input type="text" id="b-note" placeholder="Item" class="edit-input"><button class="btn btn-primary" onclick="addBazar()">Add Expense</button></div>
             <div class="card"><div class="table-wrap"><table><tbody id="bazar-body"></tbody></table></div></div>
         </div>
 
         <div id="tab-members" class="tab-content hidden">
-            <div class="card admin-only hidden">
-                <h3>Management</h3>
-                <input type="text" id="new-mem-name" class="edit-input" placeholder="Name"><input type="number" id="new-mem-min" class="edit-input" placeholder="Min Meal" value="50">
-                <button class="btn btn-primary" onclick="addMember()">Add Member</button>
-                <hr style="margin:1.5rem 0; border:0; border-top:1px solid #eee;">
-                <input type="date" id="dep-date" class="edit-input"><select id="dep-member" class="edit-input"></select><input type="number" id="dep-amt" placeholder="Deposit Amount" class="edit-input">
-                <button class="btn btn-primary" onclick="addDeposit()">Save Deposit</button>
-            </div>
-            <div class="card"><h3>Members</h3><div class="table-wrap"><table><tbody id="member-list-body"></tbody></table></div></div>
-            <div class="card"><h3>Recent Deposits</h3><div class="table-wrap"><table><tbody id="deposit-history-body"></tbody></table></div></div>
+            <div class="card admin-only hidden"><h3>Members</h3><input type="text" id="new-mem-name" class="edit-input" placeholder="Name"><input type="number" id="new-mem-min" class="edit-input" placeholder="Min Meal" value="50"><button class="btn btn-primary" onclick="addMember()">Add Member</button><hr style="margin:1.5rem 0; border:0; border-top:1px solid #eee;"><input type="date" id="dep-date" class="edit-input"><select id="dep-member" class="edit-input"></select><input type="number" id="dep-amt" placeholder="Deposit Amount" class="edit-input"><button class="btn btn-primary" onclick="addDeposit()">Save Deposit</button></div>
+            <div class="card"><div class="table-wrap"><table><tbody id="member-list-body"></tbody></table></div></div>
+            <div class="card"><div class="table-wrap"><table><tbody id="deposit-history-body"></tbody></table></div></div>
         </div>
 
         <div id="tab-settings" class="tab-content hidden">
-            <div class="card">
-                <h3>System Keys</h3>
-                <input type="text" id="set-admin-key" class="edit-input" placeholder="Admin Key">
-                <input type="text" id="set-viewer-key" class="edit-input" placeholder="Viewer Key">
-                <button class="btn btn-primary" onclick="updateKeys()">Update Keys</button>
-            </div>
             <div class="card admin-only hidden">
-                <h3>Upload Payment QR</h3>
-                <div style="border:2px dashed #eee; padding:20px; border-radius:15px; text-align:center;">
-                    <input type="file" id="qr-input" accept="image/*" style="margin-bottom:15px;">
-                    <button class="btn btn-primary" onclick="uploadQR()">PUSH QR TO LIVE SYSTEM</button>
+                <h3>Notice Management</h3>
+                <textarea id="notice-input" class="edit-input" placeholder="Type new notice here..." style="height: 100px; resize: none;"></textarea>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-primary" style="background: var(--accent);" onclick="updateNotice()">Broadcast</button>
+                    <button class="btn" style="background: #fee2e2; color: #ef4444;" onclick="clearNotice()">Clear Current</button>
                 </div>
             </div>
+            <div class="card">
+                <h3>System Keys</h3>
+                <input type="text" id="set-admin-key" class="edit-input" placeholder="Admin Key"><input type="text" id="set-viewer-key" class="edit-input" placeholder="Viewer Key"><button class="btn btn-primary" onclick="updateKeys()">Save Security</button>
+            </div>
+            <div class="card admin-only hidden"><h3>Payment QR</h3><input type="file" id="qr-input" accept="image/*"><button class="btn btn-primary" onclick="uploadQR()">Push QR Live</button></div>
         </div>
     </div>
 </div>
 
 <script>
     let isAdmin = false;
+    let lastKnownNotice = "";
     let keys = JSON.parse(localStorage.getItem('messKeys')) || { admin: "MESS2026", viewer: "MESSMEAL" };
-    let data = { members: [], meals: {}, bazar: [], deposits: [], keys: keys, paymentQR: "" };
+    let data = { members: [], meals: {}, bazar: [], deposits: [], keys: keys, paymentQR: "", notice: "" };
 </script>
 
 <script type="module">
@@ -204,8 +202,7 @@
         projectId: "messmenegment",
         storageBucket: "messmenegment.firebasestorage.app",
         messagingSenderId: "365715103776",
-        appId: "1:365715103776:web:32af4ed2537cb806341c45",
-        measurementId: "G-53L55JYM5W"
+        appId: "1:365715103776:web:32af4ed2537cb806341c45"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -215,55 +212,61 @@
     onValue(dataRef, (snapshot) => {
         const cloudData = snapshot.val();
         if (cloudData) {
+            // Instant Notification Logic
+            if (cloudData.notice && cloudData.notice !== lastKnownNotice && lastKnownNotice !== "") {
+                const toast = document.getElementById('toast');
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 6000);
+            }
+            lastKnownNotice = cloudData.notice || "";
+            
             data = cloudData;
             if (data.keys) { keys = data.keys; localStorage.setItem('messKeys', JSON.stringify(keys)); }
             window.refreshUI();
             window.refreshQR();
+            window.refreshNotice();
         }
     });
 
     window.save = function() {
         if(!isAdmin) return;
         data.keys = keys;
-        set(dataRef, data).catch(err => alert("Sync Error: " + err.message));
+        set(dataRef, data);
         window.refreshUI();
     };
 
-    // --- QR UPLOAD LOGIC ---
+    window.updateNotice = function() {
+        const t = document.getElementById('notice-input').value;
+        if(t) { data.notice = t; window.save(); document.getElementById('notice-input').value = ""; }
+    };
+
+    window.clearNotice = function() { data.notice = ""; window.save(); };
+
+    window.refreshNotice = function() {
+        const d = document.getElementById('notice-display-card');
+        const t = document.getElementById('current-notice');
+        if(data.notice) { t.innerText = data.notice; d.classList.remove('hidden'); }
+        else { d.classList.add('hidden'); }
+    };
+
     window.uploadQR = function() {
         const file = document.getElementById('qr-input').files[0];
-        if(!file) return alert("Select an image first!");
-        const reader = new FileReader();
-        reader.onloadend = function() {
-            data.paymentQR = reader.result;
-            window.save();
-            alert("QR Code updated instantly for all members!");
-        }
-        reader.readAsDataURL(file);
+        if(!file) return;
+        const r = new FileReader();
+        r.onloadend = () => { data.paymentQR = r.result; window.save(); };
+        r.readAsDataURL(file);
     };
 
     window.refreshQR = function() {
-        const qrImg = document.getElementById('display-qr');
-        const dBtn = document.getElementById('download-link');
-        const msg = document.getElementById('no-qr-msg');
-        if(data.paymentQR) {
-            qrImg.src = data.paymentQR;
-            qrImg.classList.remove('hidden');
-            dBtn.href = data.paymentQR;
-            dBtn.classList.remove('hidden');
-            msg.classList.add('hidden');
-        } else {
-            qrImg.classList.add('hidden');
-            dBtn.classList.add('hidden');
-            msg.classList.remove('hidden');
-        }
+        const i = document.getElementById('display-qr'), l = document.getElementById('download-link'), m = document.getElementById('no-qr-msg');
+        if(data.paymentQR) { i.src = data.paymentQR; i.classList.remove('hidden'); l.href = data.paymentQR; l.classList.remove('hidden'); m.classList.add('hidden'); }
+        else { i.classList.add('hidden'); l.classList.add('hidden'); m.classList.remove('hidden'); }
     };
 
     window.refreshUI = function() {
         const sBody = document.getElementById('summary-body');
         if(!sBody) return;
-        const selMonth = document.getElementById('filter-month').value;
-        const selYear = document.getElementById('filter-year').value;
+        const selMonth = document.getElementById('filter-month').value, selYear = document.getElementById('filter-year').value;
         const filterStr = `${selYear}-${selMonth}`;
         const lastDayDate = new Date(selYear, selMonth, 0); 
         const lastDayString = `${selYear}-${selMonth}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
@@ -279,14 +282,13 @@
         if (data.meals) {
             Object.entries(data.meals).forEach(([date, entry]) => {
                 if(date.startsWith(filterStr)) {
-                    Object.entries(entry).forEach(([id, qty]) => { if(mActualCounts[id] !== undefined) mActualCounts[id] += parseFloat(qty); });
+                    Object.entries(entry).forEach(([id, qty]) => { if(mActualCounts[id] !== undefined) mActualCounts[id] += parseInt(qty) || 0; });
                 }
             });
         }
 
         const calcData = (data.members || []).map(m => {
-            const actual = mActualCounts[m.id] || 0;
-            const minSet = m.minMeal || 50;
+            const actual = mActualCounts[m.id] || 0, minSet = m.minMeal || 50;
             const billable = isFinished ? (actual <= minSet ? minSet : actual) : actual;
             totalBillable += billable;
             return { ...m, actual, billable, minSet };
@@ -296,39 +298,24 @@
         const rate = totalBillable > 0 ? totalBazar / totalBillable : 0;
         const avail = periodIncome - totalBazar;
 
-        document.getElementById('stat-meals').innerText = totalBillable.toFixed(1);
+        document.getElementById('stat-meals').innerText = Math.floor(totalBillable);
         document.getElementById('stat-cost').innerText = "₹" + totalBazar.toLocaleString();
         document.getElementById('stat-balance').innerText = "₹" + avail.toLocaleString();
         document.getElementById('stat-rate').innerText = "₹" + rate.toFixed(2);
 
         sBody.innerHTML = calcData.map(m => {
-            const cost = m.billable * rate;
-            const net = cost - (mDepsSum[m.id] || 0);
-            return `<tr>
-                <td><b>${m.name}</b></td>
-                <td>₹${(mDepsSum[m.id] || 0)}</td>
-                <td>${m.actual} <small>/${m.minSet}</small></td>
-                <td>₹${cost.toFixed(0)}</td>
-                <td>
-                    <b style="color:${net > 0 ? 'var(--primary)' : 'var(--success)'}">₹${Math.abs(net).toFixed(1)}</b>
-                    <span class="status-badge" style="background:${net > 0 ? '#fff1f2' : '#ecfdf5'}; color:${net > 0 ? 'var(--primary)' : 'var(--success)'}">
-                        ${net > 0 ? 'DUE' : 'SURPLUS'}
-                    </span>
-                </td>
-            </tr>`;
+            const cost = m.billable * rate, net = cost - (mDepsSum[m.id] || 0);
+            return `<tr><td><b>${m.name}</b></td><td>₹${(mDepsSum[m.id] || 0)}</td><td>${m.actual} <small>/${m.minSet}</small></td><td>₹${cost.toFixed(0)}</td><td><b style="color:${net > 0 ? 'var(--primary)' : 'var(--success)'}">₹${Math.abs(net).toFixed(0)}</b><span class="status-badge" style="background:${net > 0 ? '#fff1f2' : '#ecfdf5'}; color:${net > 0 ? 'var(--primary)' : 'var(--success)'}">${net > 0 ? 'DUE' : 'SURPLUS'}</span></td></tr>`;
         }).join('');
 
-        const dSelect = document.getElementById('dep-member');
-        if(dSelect) dSelect.innerHTML = (data.members || []).map(m => `<option value="${m.id}">${m.name}</option>`).join('');
-        
+        document.getElementById('dep-member').innerHTML = (data.members || []).map(m => `<option value="${m.id}">${m.name}</option>`).join('');
         if(isAdmin) {
-            const mArea = document.getElementById('meal-inputs-area');
-            if(mArea) mArea.innerHTML = (data.members || []).map(m => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:#f8fafc; padding:10px; border-radius:10px; border:1px solid #eee;"><b>${m.name}</b><input type="number" class="day-meal-val edit-input" style="width:70px; margin:0; padding:5px" data-id="${m.id}" step="0.5" value="0"></div>`).join('');
+            document.getElementById('meal-inputs-area').innerHTML = (data.members || []).map(m => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #eef2f6;"><b>${m.name}</b><input type="number" class="day-meal-val edit-input" style="width:70px; margin:0; text-align:center;" data-id="${m.id}" value="0"></div>`).join('');
         }
         
         const mDates = Object.keys(data.meals || {}).sort().reverse();
         document.getElementById('meal-history-head').innerHTML = `<tr><th>Date</th>${(data.members || []).map(m => `<th>${m.name.substring(0,3)}</th>`).join('')}${isAdmin ? '<th></th>' : ''}</tr>`;
-        document.getElementById('meal-history-body').innerHTML = mDates.map(d => `<tr><td><small>${d}</small></td>${(data.members || []).map(m => `<td>${data.meals[d][m.id] || 0}</td>`).join('')}${isAdmin ? `<td><button onclick="delMealDate('${d}')">✕</button></td>` : ''}</tr>`).join('');
+        document.getElementById('meal-history-body').innerHTML = mDates.map(d => `<tr><td><small>${d}</small></td>${(data.members || []).map(m => `<td>${Math.floor(data.meals[d][m.id] || 0)}</td>`).join('')}${isAdmin ? `<td><button onclick="delMealDate('${d}')">✕</button></td>` : ''}</tr>`).join('');
         document.getElementById('bazar-body').innerHTML = (data.bazar || []).slice().reverse().map((b, i) => `<tr><td>${b.date}</td><td>${b.note}</td><td>₹${b.amt}</td>${isAdmin ? `<td><button onclick="delBazar(${data.bazar.length-1-i})">✕</button></td>` : ''}</tr>`).join('');
         document.getElementById('member-list-body').innerHTML = (data.members || []).map((m, i) => `<tr><td><b>${m.name}</b></td><td>Min: ${m.minMeal}</td>${isAdmin ? `<td><button onclick="delMember(${i})">✕</button></td>` : ''}</tr>`).join('');
         document.getElementById('deposit-history-body').innerHTML = (data.deposits || []).slice().reverse().map((d, i) => {
@@ -350,24 +337,21 @@
         document.getElementById('login-screen').style.display = 'none'; 
         document.getElementById('app').style.display = 'block';
         document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
-        
         const now = new Date();
         const mSelect = document.getElementById('filter-month');
         if(mSelect.options.length === 0) {
-            mSelect.innerHTML = ['January','February','March','April','May','June','July','August','September','October','November','December']
-                .map((m, i) => `<option value="${String(i+1).padStart(2,'0')}">${m}</option>`).join('');
+            mSelect.innerHTML = ['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => `<option value="${String(i+1).padStart(2,'0')}">${m}</option>`).join('');
             mSelect.value = String(now.getMonth() + 1).padStart(2, '0');
             document.getElementById('filter-year').value = now.getFullYear();
         }
-        window.refreshUI();
-        window.refreshQR();
+        window.refreshUI(); window.refreshQR(); window.refreshNotice();
     };
 
     window.autoLogin = function() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) window.login(v); };
     window.checkLogin = function() { const v = document.getElementById('pass').value.toUpperCase(); if(v === keys.admin || v === keys.viewer) window.login(v); else alert("Wrong Key"); };
     window.logout = function() { location.reload(); };
 
-    window.saveDailyMeals = function() { if(!isAdmin) return; const d = document.getElementById('meal-date').value; if(!d) return alert("Select Date"); const entry = {}; document.querySelectorAll('.day-meal-val').forEach(i => entry[i.dataset.id] = parseFloat(i.value) || 0); if(!data.meals) data.meals = {}; data.meals[d] = entry; window.save(); };
+    window.saveDailyMeals = function() { if(!isAdmin) return; const d = document.getElementById('meal-date').value; if(!d) return; const entry = {}; document.querySelectorAll('.day-meal-val').forEach(i => entry[i.dataset.id] = parseInt(i.value) || 0); if(!data.meals) data.meals = {}; data.meals[d] = entry; window.save(); };
     window.delMealDate = function(d) { if(!isAdmin) return; if(confirm("Delete?")) { delete data.meals[d]; window.save(); } };
     window.addBazar = function() { if(!isAdmin) return; const d = document.getElementById('b-date').value, a = document.getElementById('b-amt').value; if(d && a) { if(!data.bazar) data.bazar = []; data.bazar.push({amt: parseFloat(a), note: document.getElementById('b-note').value, date: d}); window.save(); } };
     window.addDeposit = function() { if(!isAdmin) return; const d = document.getElementById('dep-date').value, m = document.getElementById('dep-member').value, a = document.getElementById('dep-amt').value; if(d && a && m) { if(!data.deposits) data.deposits = []; data.deposits.push({mId: parseInt(m), amt: parseFloat(a), date: d}); window.save(); } };
